@@ -1,3 +1,5 @@
+Hello
+
 # Remember: Standard Workflow tránh bị conflict
 
 ## Luôn luôn git pull dev
@@ -119,7 +121,7 @@ git pull origin develop
 
 ---
 
-## 7. Push to Your Own Branch
+## 7. Push to lên nhánh của mình
 
 ```bash
 git push origin feature/login
@@ -128,7 +130,8 @@ git push origin feature/login
 ### Important
 
 - Nhớ tạo nhánh riêng
-- Không push trực tiếp lên `main`
+- Không push trực tiếp lên và không merge vào `main`
 - Không push trực tiếp lên `develop`
+- Nhớ merge vào `dev`
 
 ---
