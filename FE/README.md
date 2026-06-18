@@ -62,7 +62,7 @@ src/
 | `/login` | Guest only | Quang |
 | `/student` | STUDENT | Vũ |
 | `/teacher/dashboard` | TEACHER | Long |
-| `/admin/dashboard` | ADMIN, SECURITY_ADMIN | Anh |
+| `/admin/dashboard` | ADMIN | Anh |
 
 After login, users redirect by `user.role`. No public registration (accounts provisioned by Admin).
 
@@ -102,7 +102,7 @@ FE expects these endpoints. **Do not change FE to match ad-hoc BE shapes** — B
 }
 ```
 
-`role` must be one of: `STUDENT` | `TEACHER` | `ADMIN` | `SECURITY_ADMIN`
+`role` must be one of: `STUDENT` | `TEACHER` | `ADMIN`
 
 ### POST `/api/auth/logout`
 

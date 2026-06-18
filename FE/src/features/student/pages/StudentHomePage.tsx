@@ -5,8 +5,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { useAuthStore } from "@/stores/auth.store";
+} from "@/shared/components/ui/card";
+import { useAuthStore } from "@/features/auth/store";
 
 export default function StudentHomePage() {
   const user = useAuthStore((state) => state.user);

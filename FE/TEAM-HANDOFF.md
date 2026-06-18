@@ -43,7 +43,7 @@ sequenceDiagram
 
     Note over Router: STUDENT → /student
     Note over Router: TEACHER → /teacher/dashboard
-    Note over Router: ADMIN / SECURITY_ADMIN → /admin/dashboard
+    Note over Router: ADMIN → /admin/dashboard
 ```
 
 ### Sau khi đã login
@@ -96,7 +96,7 @@ flowchart LR
     Home --> Login
     Student --> RoleGuard1[RoleGuard: STUDENT]
     Teacher --> RoleGuard2[RoleGuard: TEACHER]
-    Admin --> RoleGuard3[RoleGuard: ADMIN, SECURITY_ADMIN]
+    Admin --> RoleGuard3[RoleGuard: ADMIN]
 ```
 
 | Guard | File | Hành vi |
@@ -176,7 +176,7 @@ FE/src/
 }
 ```
 
-`role`: `STUDENT` | `TEACHER` | `ADMIN` | `SECURITY_ADMIN`
+`role`: `STUDENT` | `TEACHER` | `ADMIN`
 
 FE normalize thêm shape `result` / `snake_case` trong `auth.api.ts` nếu BE trả khác format.
 
@@ -207,13 +207,38 @@ npm run lint    # ESLint
 
 ---
 
-## 8. Hướng dẫn ae thêm feature mới
+## 8. Cấu trúc folder (theo [main-course-project](https://github.com/kat-minh/main-course-project))
+
+```
+src/
+  app/                 # Router, providers, App root
+    App.tsx
+    router.tsx
+    providers/
+  features/            # Nghiệp vụ theo module
+    auth/              # types, schema, store, services, hooks, components, pages
+    landing/           # HomePage
+    student/
+    dashboard/
+  shared/              # Dùng chung toàn app
+    components/
+      ui/              # shadcn primitives
+      common/          # guards, error boundary, loading states
+    layouts/           # MainLayout
+    constants/         # API_ENDPOINTS, QUERY_KEYS
+    types/
+  lib/                 # axios, queryClient, utils
+  styles/              # globals.css
+```
+
+### Thêm feature mới
 
 1. Tạo page: `src/features/<module>/pages/YourPage.tsx`
-2. Tạo API service: `src/lib/api/<module>.api.ts` — **normalize response BE tại đây**
-3. Custom hook React Query (nếu cần): `src/hooks/useXxx.ts`
-4. Thêm route trong `router.tsx` + bọc `RoleGuard` đúng role
-5. Thêm nav link trong `MainLayout.tsx` (nếu cần)
+2. Tạo service: `src/features/<module>/services.ts` — normalize response BE tại đây
+3. Hook React Query (nếu cần): `src/features/<module>/hooks/useXxx.ts`
+4. Export barrel: `src/features/<module>/index.ts`
+5. Thêm route trong `src/app/router.tsx` + bọc `RoleGuard` đúng role
+6. Thêm nav link trong `src/shared/layouts/MainLayout.tsx` (nếu cần)
 
 **Không** duplicate server data vào Zustand — dùng React Query cho data từ API.
 
@@ -221,8 +246,8 @@ npm run lint    # ESLint
 
 ## 9. Việc chưa làm (ngoài scope Quang)
 
-- [ ] UI pixel-perfect theo Google Stitch (cần design export)
-- [ ] shadcn/ui full init (`npx shadcn init`) — hiện dùng UI components tự viết theo tokens
+- [x] shadcn/ui (Radix + RHF Form pattern, soft aviation theme)
+- [x] UI login — không có đăng ký (admin provision only)
 - [ ] Tích hợp login thật — chờ BE Chinh
 - [ ] Feature Student / Teacher / Admin — ae owner từng phần
 
