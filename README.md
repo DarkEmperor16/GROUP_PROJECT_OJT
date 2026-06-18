@@ -1,5 +1,18 @@
 Hello
 
+## Nhánh `feature/duy-quang` — FE Auth (Quang)
+
+Nếu bạn checkout nhánh này, **đọc tài liệu đầy đủ tại [FE/README.md](./FE/README.md)**:
+
+- Login, session, guards, layout scaffold
+- Phân công route theo role (Student / Teacher / Admin)
+- API contract cho BE
+- Hướng dẫn chạy local + thêm feature mới
+
+PR target: **`dev`**
+
+---
+
 # Remember: Standard Workflow tránh bị conflict
 
 ## Luôn luôn git pull dev
