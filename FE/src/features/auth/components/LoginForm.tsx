@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  ArrowLeft,
   Brain,
   Eye,
   EyeOff,
@@ -41,6 +40,54 @@ const highlights = [
   },
 ] as const;
 
+function BrandLogo({
+  variant = "light",
+  className,
+}: {
+  variant?: "light" | "dark";
+  className?: string;
+}) {
+  const isLight = variant === "light";
+
+  return (
+    <Link
+      to="/"
+      className={`group inline-flex items-center gap-3 rounded-xl transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 ${className ?? ""}`}
+      aria-label="Back to home"
+    >
+      <div
+        className={
+          isLight
+            ? "flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/20 backdrop-blur-sm transition-transform group-hover:scale-105"
+            : "flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-soft transition-transform group-hover:scale-105"
+        }
+      >
+        <Plane className="h-6 w-6" aria-hidden />
+      </div>
+      <div className="text-left">
+        <p
+          className={
+            isLight
+              ? "text-sm font-medium text-white/70"
+              : "text-sm font-medium text-muted-foreground"
+          }
+        >
+          OJT KNS SU26
+        </p>
+        <p
+          className={
+            isLight
+              ? "text-xl font-semibold tracking-tight text-white"
+              : "text-xl font-semibold tracking-tight text-foreground"
+          }
+        >
+          Aviation Academy AI
+        </p>
+      </div>
+    </Link>
+  );
+}
+
 function BrandPanel() {
   return (
     <aside className="brand-panel relative hidden w-[48%] flex-col justify-between overflow-hidden p-10 text-white lg:flex xl:p-14">
@@ -55,17 +102,7 @@ function BrandPanel() {
       />
 
       <div className="relative z-10 motion-safe:animate-fade-up">
-        <div className="mb-10 flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/20 backdrop-blur-sm">
-            <Plane className="h-6 w-6" aria-hidden />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-white/70">OJT KNS SU26</p>
-            <h1 className="text-xl font-semibold tracking-tight">
-              Aviation Academy AI
-            </h1>
-          </div>
-        </div>
+        <BrandLogo variant="light" className="mb-10" />
 
         <div className="max-w-md space-y-5">
           <h2 className="text-3xl font-bold leading-tight tracking-tight xl:text-4xl">
@@ -122,26 +159,13 @@ export default function LoginForm() {
   )?.from?.pathname;
 
   return (
-    <div className="login-mesh relative flex min-h-dvh">
-      <Link
-        to="/"
-        className="absolute left-4 top-4 z-20 inline-flex items-center gap-2 rounded-lg border border-border/60 bg-card/90 px-3 py-2 text-sm font-medium text-muted-foreground shadow-sm backdrop-blur-sm transition-colors hover:border-primary/30 hover:text-primary sm:left-6 sm:top-6"
-      >
-        <ArrowLeft className="h-4 w-4" aria-hidden />
-        Back to home
-      </Link>
-
+    <div className="login-mesh flex min-h-dvh">
       <BrandPanel />
 
       <main className="flex flex-1 flex-col justify-center px-5 py-10 sm:px-8 lg:px-14 xl:px-20">
         <div className="mx-auto w-full max-w-[440px] motion-safe:animate-fade-up">
           <div className="mb-8 lg:hidden">
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-soft">
-              <Plane className="h-6 w-6" aria-hidden />
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Aviation Academy AI
-            </h1>
+            <BrandLogo variant="dark" className="mb-4" />
             <p className="mt-2 text-muted-foreground">
               Sign in to continue your learning journey
             </p>
