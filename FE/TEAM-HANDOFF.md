@@ -2,78 +2,58 @@
 
 > Branch: `feature/se-f1-auth-login`  
 > Requirement: **SE-F1** (Authentication & Authorization)  
-> **Không merge vào `main`** — chờ review và merge vào `dev`.
+> **PR target: `dev`** — không merge thẳng `main`.
 
 ---
 
 ## 1. Mục tiêu đã làm
 
-Xây dựng **nền tảng Frontend** cho module đăng nhập và phân quyền, để các ae bắt đầu code feature theo actor:
+Nền tảng Frontend cho đăng nhập và phân quyền:
 
-| AE | Role | Route sẵn có | Folder gợi ý |
-|----|------|--------------|--------------|
-| **Vũ** | Student FE | `/student` | `src/features/student/` |
-| **Long** | Teacher FE | `/teacher/dashboard` | `src/features/dashboard/` |
-| **Quốc Anh** | Admin FE | `/admin/dashboard` | `src/features/dashboard/` |
+| AE | Role | Route | Folder |
+|----|------|-------|--------|
+| **Vũ** | Student | `/student` | `src/features/student/` |
+| **Long** | Teacher | `/teacher/dashboard` | `src/features/dashboard/` |
+| **Quốc Anh** | Admin | `/admin/dashboard` | `src/features/dashboard/` |
 
-**Lưu ý:** Không có trang **Register public** — đúng master concept (tài khoản do Admin cấp).
+- Không có **Register** public (admin provision)
+- Login full-page tại `/login` (tách khỏi MainLayout)
+- UI: shadcn/ui + theme aviation, role picker 3 role
+- Logo ✈️ trên login click → về Home
 
 ---
 
-## 2. Luồng đăng nhập (Auth Flow)
+## 2. Luồng đăng nhập
 
 ```mermaid
 sequenceDiagram
     participant User
     participant LoginForm
     participant useLoginMutation
-    participant authApi
+    participant authService
     participant BE as BE /api/auth/login
-    participant Zustand as auth.store (localStorage)
+    participant Zustand as auth.store
     participant Router
 
-    User->>LoginForm: Nhập email + password
-    LoginForm->>useLoginMutation: submit (RHF + Zod validate)
-    useLoginMutation->>authApi: POST /auth/login
-    authApi->>BE: { email, password }
-    BE-->>authApi: { accessToken, refreshToken, user }
-    authApi-->>useLoginMutation: normalized response
+    User->>LoginForm: Chọn role + email + password
+    LoginForm->>useLoginMutation: submit (RHF + Zod)
+    useLoginMutation->>authService: POST /auth/login
+    authService->>BE: { email, password, role }
+    BE-->>authService: { accessToken, refreshToken, user }
+    useLoginMutation->>useLoginMutation: role FE === user.role?
     useLoginMutation->>Zustand: setAuth(tokens, user)
     useLoginMutation->>Router: navigate theo role
-
-    Note over Router: STUDENT → /student
-    Note over Router: TEACHER → /teacher/dashboard
-    Note over Router: ADMIN → /admin/dashboard
 ```
 
-### Sau khi đã login
-
-```mermaid
-flowchart TD
-    A[User gọi API] --> B[apiClient request interceptor]
-    B --> C{ có accessToken? }
-    C -->|Có| D[Gắn Authorization Bearer]
-    C -->|Không| E[Gửi request không token]
-    D --> F[BE xử lý]
-    F --> G{ Response 401? }
-    G -->|Không| H[Trả data về component]
-    G -->|Có| I[POST /auth/refresh]
-    I --> J{ Refresh OK? }
-    J -->|Có| K[Retry request cũ]
-    J -->|Không| L[clearAuth → /login]
-```
-
-### Logout
-
-1. User bấm **Logout** trên `MainLayout`
-2. `useLogoutMutation` → `POST /api/auth/logout` (lỗi vẫn logout client)
-3. `clearAuth()` — xóa Zustand + localStorage
-4. `queryClient.removeQueries()` — xóa cache React Query
-5. Redirect `/login`
+| Role | Redirect |
+|------|----------|
+| STUDENT | `/student` |
+| TEACHER | `/teacher/dashboard` |
+| ADMIN | `/admin/dashboard` |
 
 ---
 
-## 3. Luồng Route & Guards
+## 3. Route & Guards
 
 ```mermaid
 flowchart LR
@@ -82,189 +62,154 @@ flowchart LR
         Login["/login"]
     end
 
-    subgraph GuestGuard
-        Login
-    end
-
-    subgraph RequireAuth
-        Student["/student"]
-        Teacher["/teacher/dashboard"]
-        Admin["/admin/dashboard"]
-    end
-
-    Login -->|đã có token| RoleRedirect[Redirect home theo role]
-    Home --> Login
-    Student --> RoleGuard1[RoleGuard: STUDENT]
-    Teacher --> RoleGuard2[RoleGuard: TEACHER]
-    Admin --> RoleGuard3[RoleGuard: ADMIN]
+    Login --> GuestGuard
+    Home --> MainLayout
+    MainLayout --> RequireAuth
+    RequireAuth --> RoleGuard
 ```
 
-| Guard | File | Hành vi |
+| Guard | Path | Hành vi |
 |-------|------|---------|
-| `GuestGuard` | `components/guards/GuestGuard.tsx` | Đã login → không vào `/login` |
-| `RequireAuth` | `components/guards/RequireAuth.tsx` | Chưa login → `/login` + lưu `from` |
-| `RoleGuard` | `components/guards/RoleGuard.tsx` | Sai role → redirect về home role |
+| `GuestGuard` | `shared/components/common/GuestGuard.tsx` | Đã login → redirect home theo role |
+| `RequireAuth` | `shared/components/common/RequireAuth.tsx` | Chưa login → `/login` + lưu `from` |
+| `RoleGuard` | `shared/components/common/RoleGuard.tsx` | Sai role → redirect home role |
 
 ---
 
-## 4. Cấu trúc thư mục FE
+## 4. Cấu trúc thư mục
 
-```
-FE/src/
-├── components/
-│   ├── guards/       RequireAuth, GuestGuard, RoleGuard
-│   ├── layouts/      MainLayout (header, nav, logout)
-│   ├── ui/           Button, Input, Card, StatusStates, Skeleton
-│   └── errors/       RouteErrorBoundary
-├── features/
-│   ├── auth/         LoginForm, LoginPage        ← Quang
-│   ├── student/      StudentHomePage (placeholder) ← Vũ
-│   └── dashboard/    Teacher + Admin (placeholder) ← Long, Anh
-├── hooks/            useLoginMutation, useLogoutMutation
-├── lib/
-│   ├── api/          auth.api.ts (normalize BE response)
-│   └── http/         apiClient.ts (axios + interceptors)
-├── stores/           auth.store.ts (Zustand + persist)
-├── types/            auth.ts, axios.d.ts
-├── utils/            rules.ts (Zod loginSchema)
-├── pages/            HomePage.tsx
-├── router.tsx
-└── main.tsx          QueryClient + Router + Toaster
-```
-
----
-
-## 5. Stack đã setup
-
-| Công nghệ | Dùng cho |
-|-----------|----------|
-| React 18 + TypeScript + Vite | Scaffold |
-| React Router v6 | Routing, lazy load |
-| Zustand + persist | Auth state (token, user) |
-| TanStack React Query | Login/logout mutations |
-| Axios | HTTP + interceptors |
-| React Hook Form + Zod | LoginForm validation |
-| Tailwind CSS | UI + theme tokens |
-| Sonner | Toast notifications |
-| Lucide React | Icons (không dùng emoji) |
-
----
-
-## 6. API cần BE (Chinh) — contract FE đang expect
-
-### `POST /api/auth/login`
-
-**Request:**
-```json
-{
-  "email": "student@academy.edu",
-  "password": "string"
-}
-```
-
-**Response (camelCase):**
-```json
-{
-  "accessToken": "jwt...",
-  "refreshToken": "jwt...",
-  "user": {
-    "id": "1",
-    "fullName": "Nguyen Van A",
-    "email": "student@academy.edu",
-    "role": "STUDENT"
-  }
-}
-```
-
-`role`: `STUDENT` | `TEACHER` | `ADMIN`
-
-FE normalize thêm shape `result` / `snake_case` trong `auth.api.ts` nếu BE trả khác format.
-
-### `POST /api/auth/logout` — optional
-
-### `POST /api/auth/refresh` — optional (cho auto-refresh 401)
-
-Chi tiết: xem `FE/README.md`
-
----
-
-## 7. Cách chạy local
-
-```bash
-cd FE
-cp .env.example .env
-npm install
-npm run dev
-```
-
-- FE: http://localhost:5173  
-- Proxy `/api` → http://localhost:3000 (khi BE chạy)
-
-```bash
-npm run build   # production build
-npm run lint    # ESLint
-```
-
----
-
-## 8. Cấu trúc folder (theo [main-course-project](https://github.com/kat-minh/main-course-project))
+Theo [main-course-project](https://github.com/kat-minh/main-course-project):
 
 ```
 src/
-  app/                 # Router, providers, App root
-    App.tsx
-    router.tsx
-    providers/
-  features/            # Nghiệp vụ theo module
+  app/                 # App.tsx, router.tsx, providers/
+  features/
     auth/              # types, schema, store, services, hooks, components, pages
     landing/           # HomePage
     student/
     dashboard/
-  shared/              # Dùng chung toàn app
-    components/
-      ui/              # shadcn primitives
-      common/          # guards, error boundary, loading states
+  shared/
+    components/ui/     # shadcn primitives
+    components/common/ # guards, RouteErrorBoundary, StatusStates
     layouts/           # MainLayout
-    constants/         # API_ENDPOINTS, QUERY_KEYS
+    constants/         # API_ENDPOINTS
     types/
-  lib/                 # axios, queryClient, utils
+  lib/                 # axios.ts, queryClient.ts, utils.ts
   styles/              # globals.css
 ```
 
-### Thêm feature mới
+### Auth feature (`features/auth/`)
 
-1. Tạo page: `src/features/<module>/pages/YourPage.tsx`
-2. Tạo service: `src/features/<module>/services.ts` — normalize response BE tại đây
-3. Hook React Query (nếu cần): `src/features/<module>/hooks/useXxx.ts`
-4. Export barrel: `src/features/<module>/index.ts`
-5. Thêm route trong `src/app/router.tsx` + bọc `RoleGuard` đúng role
-6. Thêm nav link trong `src/shared/layouts/MainLayout.tsx` (nếu cần)
-
-**Không** duplicate server data vào Zustand — dùng React Query cho data từ API.
+| File | Mô tả |
+|------|--------|
+| `types.ts` | `UserRole`, `LoginRequest`, `ROLE_HOME_PATH` |
+| `schema.ts` | Zod `loginSchema` |
+| `store.ts` | Zustand persist `ojt-kns-auth` |
+| `services.ts` | `authService.login/logout` |
+| `hooks/useAuth.ts` | `useLoginMutation`, `useLogoutMutation` |
+| `components/LoginForm.tsx` | Form + role picker |
+| `pages/LoginPage.tsx` | Wrapper |
 
 ---
 
-## 9. Việc chưa làm (ngoài scope Quang)
+## 5. Stack
 
-- [x] shadcn/ui (Radix + RHF Form pattern, soft aviation theme)
-- [x] UI login — không có đăng ký (admin provision only)
-- [ ] Tích hợp login thật — chờ BE Chinh
-- [ ] Feature Student / Teacher / Admin — ae owner từng phần
+| Công nghệ | Dùng cho |
+|-----------|----------|
+| React 18 + TS + Vite | Scaffold |
+| React Router v6 | Routing, lazy load |
+| Zustand + persist | Auth state |
+| TanStack Query | Login/logout mutations |
+| Axios (`lib/axios.ts`) | HTTP + interceptors |
+| RHF + Zod | Login validation |
+| shadcn/ui + Tailwind | UI |
+| Sonner | Toast |
+| Lucide | Icons |
+
+---
+
+## 6. API contract (Chinh — BE)
+
+### `POST /api/auth/login`
+
+```json
+{
+  "email": "student@academy.edu",
+  "password": "string",
+  "role": "STUDENT"
+}
+```
+
+Response: `accessToken`, `refreshToken`, `user: { id, fullName, email, role }`
+
+`role`: `STUDENT` | `TEACHER` | `ADMIN`
+
+Normalize tại `features/auth/services.ts` (hỗ trợ `result`, snake_case).
+
+### `POST /api/auth/logout` — optional
+
+### `POST /api/auth/refresh` — optional
+
+---
+
+## 7. Chạy local
+
+```bash
+cd FE
+npm install
+npm run dev
+```
+
+- FE: http://localhost:5173
+- Proxy `/api` → localhost:3000
+
+```bash
+npm run build
+npm run lint
+```
+
+---
+
+## 8. Thêm feature mới
+
+1. `src/features/<module>/pages/YourPage.tsx`
+2. `src/features/<module>/services.ts`
+3. `src/features/<module>/hooks/useXxx.ts` (nếu cần)
+4. `src/features/<module>/index.ts`
+5. `src/app/router.tsx` + `RoleGuard`
+6. `src/shared/layouts/MainLayout.tsx` (nav nếu cần)
+
+**Không** duplicate server data vào Zustand — dùng React Query cho API data.
+
+---
+
+## 9. Trạng thái
+
+- [x] Auth scaffold + guards + router
+- [x] shadcn/ui login + home
+- [x] Role picker (3 roles)
+- [x] Folder structure main-course-project
+- [ ] Login end-to-end — chờ BE Chinh
+- [ ] Student / Teacher / Admin features — ae owner
 
 ---
 
 ## 10. Git
 
 ```bash
-# Đang ở branch
+# Branch hiện tại
 feature/se-f1-auth-login
 
-# Sau khi merge vào dev, ae pull:
-git checkout dev
-git pull origin dev
+# Commits gần nhất
+# [SE-F1.1] feat: implement login form and auth guards
+# [SE-F1.1] refactor: align FE structure with main-course-project pattern
+# [SE-F1.1] fix: use plane logo as back-to-home link on login
+
+# Sau merge dev
+git checkout dev && git pull origin dev
 ```
 
-**Commit message mẫu:** `[SE-F1.1] feat: implement login form and auth guards`
+**Commit format:** `[SE-Fx.x] feat|fix|refactor: mô tả`
 
 ---
 

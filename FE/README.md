@@ -30,65 +30,72 @@ App: http://localhost:5173
 |----------|---------|-------------|
 | `VITE_API_URL` | `/api` | API base URL (Vite proxies to BE port 3000 in dev) |
 
-## Folder structure (for teammates)
+## Folder structure
+
+Theo pattern [main-course-project](https://github.com/kat-minh/main-course-project):
 
 ```
 src/
-├── components/
-│   ├── guards/          # RequireAuth, GuestGuard, RoleGuard
-│   ├── layouts/         # MainLayout (header, nav, logout)
-│   ├── ui/              # Shared UI primitives
-│   └── errors/          # Error boundaries
-├── features/
-│   ├── auth/            # LoginForm, LoginPage (Quang)
-│   ├── student/         # Student screens (Vũ)
-│   └── dashboard/       # Teacher & Admin (Long, Anh)
-├── hooks/               # useLoginMutation, useLogoutMutation
-├── lib/
-│   ├── api/             # Service layer — normalize BE responses here
-│   └── http/            # axios apiClient + interceptors
-├── pages/               # Public pages (HomePage)
-├── stores/              # Zustand (auth.store)
-├── types/               # Shared TypeScript types
-├── utils/               # Zod schemas (rules.ts)
-└── router.tsx           # All routes — add new routes here
+├── app/                    # App root, router, providers
+│   ├── App.tsx
+│   ├── router.tsx
+│   └── providers/
+├── features/               # Business modules
+│   ├── auth/               # types, schema, store, services, hooks, components, pages
+│   ├── landing/            # HomePage
+│   ├── student/
+│   └── dashboard/
+├── shared/
+│   ├── components/
+│   │   ├── ui/             # shadcn/ui primitives
+│   │   └── common/         # guards, error boundary, loading states
+│   ├── layouts/            # MainLayout
+│   ├── constants/          # API_ENDPOINTS, QUERY_KEYS
+│   └── types/
+├── lib/                    # axios, queryClient, utils
+└── styles/                 # globals.css
 ```
 
 ## Routes
 
-| Path | Access | Owner |
+| Path | Access | Notes |
 |------|--------|-------|
-| `/` | Public | — |
-| `/login` | Guest only | Quang |
+| `/` | Public | Home (MainLayout) |
+| `/login` | Guest only | Full-page login, không có header |
 | `/student` | STUDENT | Vũ |
 | `/teacher/dashboard` | TEACHER | Long |
 | `/admin/dashboard` | ADMIN | Anh |
 
-After login, users redirect by `user.role`. No public registration (accounts provisioned by Admin).
+- Sau login redirect theo `user.role`
+- Không có đăng ký public (admin provision)
+- Login: chọn role (Student / Teacher / Admin) + email/password
+- Logo máy bay trên login → click về Home
 
-## How to add a new feature page
+## How to add a new feature
 
-1. Create page under `src/features/<module>/pages/YourPage.tsx`
-2. Add API in `src/lib/api/<module>.api.ts` (normalize BE response)
-3. Add custom hook in `src/hooks/` if using React Query
-4. Register route in `router.tsx` with correct `RoleGuard`
-5. Add nav link in `MainLayout.tsx` if needed
+1. Page: `src/features/<module>/pages/YourPage.tsx`
+2. Service: `src/features/<module>/services.ts` — normalize BE response tại đây
+3. Hook (nếu cần): `src/features/<module>/hooks/useXxx.ts`
+4. Barrel: `src/features/<module>/index.ts`
+5. Route: `src/app/router.tsx` + `RoleGuard` đúng role
+6. Nav (nếu cần): `src/shared/layouts/MainLayout.tsx`
 
 ## API contract (for BE — Chinh)
 
-FE expects these endpoints. **Do not change FE to match ad-hoc BE shapes** — BE should align or service layer normalizes.
-
 ### POST `/api/auth/login`
 
-**Request (camelCase JSON):**
+**Request:**
 ```json
 {
   "email": "student@academy.edu",
-  "password": "string"
+  "password": "string",
+  "role": "STUDENT"
 }
 ```
 
-**Response (any of these shapes are normalized in `auth.api.ts`):**
+`role`: `STUDENT` | `TEACHER` | `ADMIN`
+
+**Response** (normalized in `features/auth/services.ts`):
 ```json
 {
   "accessToken": "jwt...",
@@ -102,36 +109,32 @@ FE expects these endpoints. **Do not change FE to match ad-hoc BE shapes** — B
 }
 ```
 
-`role` must be one of: `STUDENT` | `TEACHER` | `ADMIN`
+FE cũng chấp nhận `result` / `snake_case` từ BE.
 
-### POST `/api/auth/logout`
+### POST `/api/auth/logout` — optional
 
-Clears server session (optional for client; FE clears store + query cache regardless).
-
-### POST `/api/auth/refresh` (optional, for token refresh)
-
-**Request:** `{ "refreshToken": "..." }`  
-**Response:** `{ "accessToken": "...", "refreshToken": "..." }`
+### POST `/api/auth/refresh` — optional (401 auto-refresh)
 
 ## Auth flow
 
-1. `LoginForm` → `useLoginMutation` → `authApi.login`
-2. Tokens + user saved in Zustand (`ojt-kns-auth` in localStorage)
-3. `apiClient` attaches `Authorization: Bearer <token>`
-4. 401 → refresh attempt → fail → redirect `/login`
-5. Logout → `authApi.logout` → clear store → `queryClient.removeQueries()`
+1. `LoginForm` → `useLoginMutation` → `authService.login`
+2. Validate role FE chọn khớp `user.role` từ BE
+3. Tokens + user → Zustand (`ojt-kns-auth`, localStorage)
+4. `apiClient` gắn `Authorization: Bearer`
+5. 401 → refresh → fail → `/login`
+6. Logout → clear store + React Query cache
 
-## Git branch (Quang)
+## Git
 
 ```bash
 git checkout dev
 git pull origin dev
-git checkout -b feature/se-f1-auth-login
-# after changes
-git commit -m "[SE-F1.1] feat: implement login form and auth guards"
+git checkout feature/se-f1-auth-login
 git push origin feature/se-f1-auth-login
 ```
 
+PR target: **`dev`** (không merge thẳng `main`).
+
 ## Deploy
 
-`vercel.json` included for SPA deep-link routing. Set `VITE_API_URL` in Vercel environment variables.
+`vercel.json` included for SPA routing. Set `VITE_API_URL` on Vercel.
