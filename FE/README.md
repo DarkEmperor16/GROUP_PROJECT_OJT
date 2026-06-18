@@ -129,8 +129,8 @@ FE cũng chấp nhận `result` / `snake_case` từ BE.
 ```bash
 git checkout dev
 git pull origin dev
-git checkout feature/se-f1-auth-login
-git push origin feature/se-f1-auth-login
+git checkout feature/duy-quang
+git push origin feature/duy-quang
 ```
 
 PR target: **`dev`** (không merge thẳng `main`).

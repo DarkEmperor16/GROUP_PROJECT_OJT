@@ -1,6 +1,6 @@
 # FE Auth Base — Handoff cho team (Quang)
 
-> Branch: `feature/se-f1-auth-login`  
+> Branch: `feature/duy-quang`  
 > Requirement: **SE-F1** (Authentication & Authorization)  
 > **PR target: `dev`** — không merge thẳng `main`.
 
@@ -198,7 +198,7 @@ npm run lint
 
 ```bash
 # Branch hiện tại
-feature/se-f1-auth-login
+feature/duy-quang
 
 # Commits gần nhất
 # [SE-F1.1] feat: implement login form and auth guards
