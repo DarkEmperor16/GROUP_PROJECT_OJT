@@ -4,7 +4,7 @@ const users = [
     {
         id: 1,
         fullName: 'Student User',
-        email: 'student@example.com',
+        email: 'student@academy.edu',
         passwordHash: bcrypt.hashSync('123456', 10),
         role: 'STUDENT',
         status: 'ACTIVE',
@@ -14,7 +14,7 @@ const users = [
     {
         id: 2,
         fullName: 'Teacher User',
-        email: 'teacher@example.com',
+        email: 'teacher@academy.edu',
         passwordHash: bcrypt.hashSync('123456', 10),
         role: 'TEACHER',
         status: 'ACTIVE',
@@ -24,7 +24,7 @@ const users = [
     {
         id: 3,
         fullName: 'Admin User',
-        email: 'admin@example.com',
+        email: 'admin@academy.edu',
         passwordHash: bcrypt.hashSync('123456', 10),
         role: 'ADMIN',
         status: 'ACTIVE',
