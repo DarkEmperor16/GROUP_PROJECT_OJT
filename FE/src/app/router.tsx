@@ -30,6 +30,43 @@ export const router = createBrowserRouter([
                   return { Component: StudentHomePage };
                 },
               },
+
+              {
+                path: "student/ask-ai",
+                lazy: async () => {
+
+                  const { StudentAskAiPage } = await import("@/features/student");
+                  return { Component: StudentAskAiPage };
+                },
+              },
+              {
+                path: "student/ask-ai/:subjectId",
+                lazy: async () => {
+                  const { StudentAiChatPage } = await import("@/features/student");
+                  return { Component: StudentAiChatPage };
+                },
+              },
+              {
+                path: "student/history",
+                lazy: async () => {
+                  const { StudentHistoryPage } = await import("@/features/student");
+                  return { Component: StudentHistoryPage };
+                },
+              },
+              {
+                path: "student/quiz",
+                lazy: async () => {
+                  const { StudentQuizListPage } = await import("@/features/student");
+                  return { Component: StudentQuizListPage };
+                },
+              },
+              {
+                path: "student/quiz/:quizId",
+                lazy: async () => {
+                  const { StudentQuizWorkspacePage } = await import("@/features/student");
+                  return { Component: StudentQuizWorkspacePage };
+                },
+              },
             ],
           },
           {
