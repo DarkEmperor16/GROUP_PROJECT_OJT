@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
 
 function buildMongoUri() {
-  if (process.env.MONGO_URI) {
-    return process.env.MONGO_URI;
+  if (process.env.MONGODB_URI || process.env.MONGO_URI) {
+    return process.env.MONGODB_URI || process.env.MONGO_URI;
   }
 
   const username = process.env.DB_USERNAME;
@@ -16,7 +16,7 @@ function buildMongoUri() {
     throw new Error('DB_USERNAME and DB_PASSWORD are required to build MongoDB URI');
   }
 
-  return `mongodb+srv://${encodeURIComponent(username)}:${encodeURIComponent(password)}@${host}:${port}/${dbName}?authSource=${authSource}`;
+  return `mongodb://${encodeURIComponent(username)}:${encodeURIComponent(password)}@${host}:${port}/${dbName}?authSource=${authSource}`;
 }
 
 async function connectDB() {
