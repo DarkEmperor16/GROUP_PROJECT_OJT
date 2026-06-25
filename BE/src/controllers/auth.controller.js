@@ -1,23 +1,60 @@
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const users = require('../data/users');
+const User = require('../models/User');
 const { addActivityLog } = require('../data/activityLogs');
+const { generateTokenPair, verifyRefreshToken } = require('../utils/token');
+const { setRefreshCookie, clearRefreshCookie, clearAccessTokenCookie } = require('../utils/cookie');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key';
+// ── Helpers (private) ────────────────────────────────────────
 
 function isValidEmail(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+/** Format user cho response — 1 chỗ duy nhất, không lặp lại */
 function buildUserResponse(user) {
     return {
-        id: user.id,
+        id: user._id?.toString?.() || user.id,
         fullName: user.fullName,
         email: user.email,
         role: user.role,
         status: user.status,
     };
 }
+
+/** Tìm user theo email (case-insensitive) */
+function findUserByEmail(email) {
+    return User.findOne({ email: email.toLowerCase() });
+}
+
+/** Ghi activity log — gom lại để tránh lặp 5+ lần */
+function logActivity(userId, action, result, ipAddress) {
+    addActivityLog({ userId, action, result, ipAddress });
+}
+
+/**
+ * Tạo token pair + set cookie + trả response.
+ * Dùng chung cho login, register, refreshToken — xoá duplication.
+ *
+ * Backward compatible: vẫn trả field "token" (= accessToken)
+ * để client cũ đọc data.token vẫn hoạt động.
+ */
+function sendTokenResponse(res, user, statusCode = 200, message = 'Success') {
+    const payload = { userId: user._id?.toString?.() || user.id, role: user.role };
+    const { accessToken, refreshToken } = generateTokenPair(payload);
+
+    // Refresh token → httpOnly cookie (JS không đọc được)
+    setRefreshCookie(res, refreshToken);
+
+    return res.status(statusCode).json({
+        message,
+        accessToken,
+        refreshToken, // vẫn trả trong body để test với Postman/Bruno
+        token: accessToken, // backward compatible
+        user: buildUserResponse(user),
+    });
+}
+
+// ── Controllers ──────────────────────────────────────────────
 
 async function register(req, res) {
     const { fullName, email, password } = req.body;
@@ -41,9 +78,7 @@ async function register(req, res) {
         });
     }
 
-    const existingUser = users.find(
-        (item) => item.email.toLowerCase() === email.toLowerCase()
-    );
+    const existingUser = await findUserByEmail(email);
 
     if (existingUser) {
         return res.status(409).json({
@@ -51,117 +86,101 @@ async function register(req, res) {
         });
     }
 
-    const newUser = {
-        id: users.length + 1,
+    const newUser = await User.create({
         fullName,
         email,
         passwordHash: await bcrypt.hash(password, 10),
         role: 'STUDENT',
         status: 'ACTIVE',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    };
-
-    users.push(newUser);
-
-    addActivityLog({
-        userId: newUser.id,
-        action: 'REGISTER_SUCCESS',
-        result: 'SUCCESS',
-        ipAddress,
     });
 
-    return res.status(201).json({
-        message: 'Register successful',
-        user: buildUserResponse(newUser),
-    });
+    logActivity(newUser._id.toString(), 'REGISTER_SUCCESS', 'SUCCESS', ipAddress);
+
+    return sendTokenResponse(res, newUser, 201, 'Register successful');
 }
 
 async function login(req, res) {
     const { email, password } = req.body;
     const ipAddress = req.ip;
 
+    // ── Validate input ──
     if (!email || !password) {
-        addActivityLog({
-            action: 'LOGIN_FAILED',
-            result: 'FAILED',
-            ipAddress,
-        });
-
+        logActivity(null, 'LOGIN_FAILED', 'FAILED', ipAddress);
         return res.status(400).json({
             message: 'Email and password are required',
         });
     }
 
-    const user = users.find(
-        (item) => item.email.toLowerCase() === email.toLowerCase()
-    );
+    // ── Find user ──
+    const user = await findUserByEmail(email);
 
     if (!user) {
-        addActivityLog({
-            action: 'LOGIN_FAILED',
-            result: 'FAILED',
-            ipAddress,
-        });
-
+        logActivity(null, 'LOGIN_FAILED', 'FAILED', ipAddress);
         return res.status(401).json({
             message: 'Invalid email or password',
         });
     }
 
+    // ── Check account status ──
     if (user.status !== 'ACTIVE') {
-        addActivityLog({
-            userId: user.id,
-            action: 'LOGIN_FAILED',
-            result: 'FAILED',
-            ipAddress,
-        });
-
+        logActivity(user._id.toString(), 'LOGIN_FAILED', 'FAILED', ipAddress);
         return res.status(403).json({
             message: 'Account is inactive',
         });
     }
 
+    // ── Verify password ──
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
 
     if (!isPasswordValid) {
-        addActivityLog({
-            userId: user.id,
-            action: 'LOGIN_FAILED',
-            result: 'FAILED',
-            ipAddress,
-        });
-
+        logActivity(user._id.toString(), 'LOGIN_FAILED', 'FAILED', ipAddress);
         return res.status(401).json({
             message: 'Invalid email or password',
         });
     }
 
-    const token = jwt.sign(
-        {
-            userId: user.id,
-            role: user.role,
-        },
-        JWT_SECRET,
-        {
-            expiresIn: '1d',
+    // ── Success: trả Access Token + Refresh Token ──
+    logActivity(user._id.toString(), 'LOGIN_SUCCESS', 'SUCCESS', ipAddress);
+
+    return sendTokenResponse(res, user, 200, 'Login successful');
+}
+
+async function refreshToken(req, res) {
+    // Refresh token đến từ httpOnly cookie (browser tự gửi)
+    // HOẶC từ body (cho Postman/Bruno testing)
+    const token = req.cookies?.refreshToken || req.body?.refreshToken;
+
+    if (!token) {
+        return res.status(401).json({
+            message: 'Refresh token is required',
+        });
+    }
+
+    try {
+        const payload = verifyRefreshToken(token);
+        const user = await User.findById(payload.userId);
+
+        if (!user) {
+            return res.status(401).json({
+                message: 'User not found',
+            });
         }
-    );
 
-    addActivityLog({
-        userId: user.id,
-        action: 'LOGIN_SUCCESS',
-        result: 'SUCCESS',
-        ipAddress,
-    });
+        if (user.status !== 'ACTIVE') {
+            return res.status(403).json({
+                message: 'Account is inactive',
+            });
+        }
 
-    return res.json({
-        message: 'Login successful',
-        accessToken: token,
-        refreshToken: '',
-        token,
-        user: buildUserResponse(user),
-    });
+        logActivity(user._id.toString(), 'TOKEN_REFRESH', 'SUCCESS', req.ip);
+
+        // Token rotation: cấp cặp token mới hoàn toàn
+        return sendTokenResponse(res, user, 200, 'Token refreshed');
+    } catch (error) {
+        return res.status(401).json({
+            message: 'Invalid or expired refresh token',
+        });
+    }
 }
 
 function me(req, res) {
@@ -171,12 +190,11 @@ function me(req, res) {
 }
 
 function logout(req, res) {
-    addActivityLog({
-        userId: req.user?.id,
-        action: 'LOGOUT',
-        result: 'SUCCESS',
-        ipAddress: req.ip,
-    });
+    logActivity(req.user?._id?.toString?.() || req.user?.id, 'LOGOUT', 'SUCCESS', req.ip);
+
+    // Xoá refresh token cookie
+    clearRefreshCookie(res);
+
 
     return res.json({
         message: 'Logout successful',
@@ -186,6 +204,7 @@ function logout(req, res) {
 module.exports = {
     register,
     login,
+    refreshToken,
     me,
     logout,
 };

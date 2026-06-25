@@ -1,14 +1,17 @@
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const { authenticateToken, authorizeRoles } = require('./src/middlewares/auth.middleware');
 require('dotenv').config();
 
 const authRoutes = require('./src/routes/auth.routes');
+const { connectDB } = require('./src/config/db');
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser()); // Parse cookies (cần cho refresh token)
 
 const PORT = process.env.PORT || 3000;
 
@@ -29,6 +32,17 @@ app.get('/api/admin/test', authenticateToken, authorizeRoles('ADMIN'), (req, res
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running at http://localhost:${PORT}`);
-});
+async function startServer() {
+  try {
+    await connectDB();
+
+    app.listen(PORT, () => {
+      console.log(`Server is running at http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error.message);
+    process.exit(1);
+  }
+}
+
+startServer();
