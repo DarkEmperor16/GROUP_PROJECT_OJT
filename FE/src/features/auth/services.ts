@@ -1,36 +1,20 @@
 import apiClient from "@/lib/axios";
 import { API_ENDPOINTS } from "@/shared/constants";
 import type { LoginRequest, LoginResponse } from "@/features/auth/types";
+import { extractTokenPair } from "@/features/auth/utils/tokenResponse";
 
 interface BackendLoginResult {
   accessToken?: string;
   refreshToken?: string;
-  access_token?: string;
-  refresh_token?: string;
+  token?: string;
   user?: LoginResponse["user"];
-  result?: {
-    accessToken?: string;
-    refreshToken?: string;
-    access_token?: string;
-    refresh_token?: string;
-    user?: LoginResponse["user"];
-  };
-  data?: {
-    accessToken?: string;
-    refreshToken?: string;
-    access_token?: string;
-    refresh_token?: string;
-    user?: LoginResponse["user"];
-  };
+  result?: BackendLoginResult;
+  data?: BackendLoginResult;
 }
 
 function normalizeLoginResponse(data: BackendLoginResult): LoginResponse {
   const payload = data.result ?? data.data ?? data;
-
-  const accessToken =
-    payload.accessToken ?? payload.access_token ?? data.accessToken ?? "";
-  const refreshToken =
-    payload.refreshToken ?? payload.refresh_token ?? data.refreshToken ?? "";
+  const { accessToken, refreshToken } = extractTokenPair(data);
   const user = payload.user ?? data.user;
 
   if (!accessToken || !user) {
