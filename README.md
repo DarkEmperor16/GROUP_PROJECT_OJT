@@ -1,15 +1,15 @@
 Hello
 
-## Nhánh `feature/duy-quang` — FE Auth (Quang)
+## FE Auth (Quang) — trên nhánh `dev`
 
-Nếu bạn checkout nhánh này, **đọc tài liệu đầy đủ tại [FE/README.md](./FE/README.md)**:
+Tài liệu đầy đủ: **[FE/README.md](./FE/README.md)**
 
-- Login, session, guards, layout scaffold
-- Phân công route theo role (Student / Teacher / Admin)
-- API contract cho BE
-- Hướng dẫn chạy local + thêm feature mới
+- Login E2E với BE (MongoDB + JWT)
+- Session, guards, refresh token
+- Student sub-pages (Vũ) đã có trên `dev`
+- API contract + hướng dẫn chạy local
 
-PR target: **`dev`**
+PR target: **`dev`** — không merge thẳng `main`
 
 ---
 
