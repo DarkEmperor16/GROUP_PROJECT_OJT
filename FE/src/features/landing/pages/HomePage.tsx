@@ -6,6 +6,8 @@ import {
   Sparkles,
   ArrowRight,
 } from "lucide-react";
+import { useAuthStore } from "@/features/auth/store";
+import { ROLE_HOME_PATH } from "@/features/auth/types";
 import { buttonVariants } from "@/shared/components/ui/button";
 import {
   Card,
@@ -23,6 +25,7 @@ const features = [
     description:
       "Get answers grounded in official course materials with source references.",
     accent: "from-primary/20 to-primary/5",
+    studentPath: "/student/ask-ai",
   },
   {
     icon: BookOpen,
@@ -30,6 +33,7 @@ const features = [
     description:
       "Auto-generated quizzes from course documents to reinforce learning.",
     accent: "from-secondary/25 to-secondary/5",
+    studentPath: "/student/quiz",
   },
   {
     icon: Sparkles,
@@ -37,10 +41,38 @@ const features = [
     description:
       "Review past questions, answers, and feedback in one place.",
     accent: "from-primary/15 to-muted",
+    studentPath: "/student/history",
   },
 ] as const;
 
+const ROLE_CTA: Record<
+  keyof typeof ROLE_HOME_PATH,
+  { label: string; explore: string }
+> = {
+  STUDENT: { label: "Go to Learning", explore: "Open student workspace" },
+  TEACHER: { label: "Go to Dashboard", explore: "Open teacher dashboard" },
+  ADMIN: { label: "Go to Admin", explore: "Open admin panel" },
+};
+
 export default function HomePage() {
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const user = useAuthStore((state) => state.user);
+  const isLoggedIn = Boolean(accessToken && user);
+  const workspacePath = user ? ROLE_HOME_PATH[user.role] : "/login";
+  const cta = user ? ROLE_CTA[user.role] : null;
+
+  const featureLink = (studentPath: string) => {
+    if (!isLoggedIn) return "/login";
+    if (user?.role === "STUDENT") return studentPath;
+    return ROLE_HOME_PATH[user!.role];
+  };
+
+  const featureActionLabel = () => {
+    if (!isLoggedIn) return "Sign in to open";
+    if (user?.role === "STUDENT") return "Open";
+    return "Go to your workspace";
+  };
+
   return (
     <div className="-mx-4 -mt-4 md:-mx-6 md:-mt-6">
       <section className="login-mesh relative overflow-hidden border-b border-border/60 px-4 py-14 md:px-6 md:py-20">
@@ -66,24 +98,48 @@ export default function HomePage() {
             quizzes based on official aviation academy documents.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              to="/login"
-              className={cn(buttonVariants({ size: "lg" }), "gap-2")}
-            >
-              Sign in
-              <ArrowRight className="h-4 w-4" aria-hidden />
-            </Link>
-            <Link
-              to="/login"
-              className={cn(buttonVariants({ variant: "outline", size: "lg" }))}
-            >
-              Explore platform
-            </Link>
+            {isLoggedIn && cta ? (
+              <>
+                <Link
+                  to={workspacePath}
+                  className={cn(buttonVariants({ size: "lg" }), "gap-2")}
+                >
+                  {cta.label}
+                  <ArrowRight className="h-4 w-4" aria-hidden />
+                </Link>
+                <a
+                  href="#features"
+                  className={cn(
+                    buttonVariants({ variant: "outline", size: "lg" }),
+                  )}
+                >
+                  {cta.explore}
+                </a>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className={cn(buttonVariants({ size: "lg" }), "gap-2")}
+                >
+                  Sign in
+                  <ArrowRight className="h-4 w-4" aria-hidden />
+                </Link>
+                <a
+                  href="#features"
+                  className={cn(
+                    buttonVariants({ variant: "outline", size: "lg" }),
+                  )}
+                >
+                  Explore platform
+                </a>
+              </>
+            )}
           </div>
         </div>
       </section>
 
-      <section className="px-4 py-12 md:px-6 md:py-16">
+      <section id="features" className="px-4 py-12 md:px-6 md:py-16">
         <div className="mb-8 text-center">
           <p className="text-sm font-medium text-primary">Platform features</p>
           <h2 className="mt-2 text-2xl font-bold tracking-tight text-foreground">
@@ -92,34 +148,44 @@ export default function HomePage() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {features.map(({ icon: Icon, title, description, accent }) => (
-            <Card
-              key={title}
-              className="border-border/60 bg-card/90 backdrop-blur-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-soft"
-            >
-              <CardHeader>
-                <div
-                  className={cn(
-                    "mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br text-primary",
-                    accent,
-                  )}
-                >
-                  <Icon className="h-5 w-5" aria-hidden />
-                </div>
-                <CardTitle className="text-xl">{title}</CardTitle>
-                <CardDescription className="text-base leading-relaxed">
-                  {description}
-                </CardDescription>
-              </CardHeader>
-              {title === "Learning History" && (
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Sign in with your assigned account to start.
-                  </p>
-                </CardContent>
-              )}
-            </Card>
-          ))}
+          {features.map(({ icon: Icon, title, description, accent, studentPath }) => {
+            const to = featureLink(studentPath);
+            const actionLabel = featureActionLabel();
+
+            return (
+              <Link
+                key={title}
+                to={to}
+                className="group block rounded-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20"
+              >
+                <Card className="h-full border-border/60 bg-card/90 backdrop-blur-sm transition-all duration-200 group-hover:-translate-y-1 group-hover:shadow-soft">
+                  <CardHeader>
+                    <div
+                      className={cn(
+                        "mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br text-primary",
+                        accent,
+                      )}
+                    >
+                      <Icon className="h-5 w-5" aria-hidden />
+                    </div>
+                    <CardTitle className="text-xl">{title}</CardTitle>
+                    <CardDescription className="text-base leading-relaxed">
+                      {description}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="inline-flex items-center gap-1 text-sm font-medium text-primary">
+                      {actionLabel}
+                      <ArrowRight
+                        className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                        aria-hidden
+                      />
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
         </div>
       </section>
     </div>

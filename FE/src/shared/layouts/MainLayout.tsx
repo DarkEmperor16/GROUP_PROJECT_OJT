@@ -58,8 +58,17 @@ export default function MainLayout() {
 
             {accessToken ? (
               <div className="ml-2 flex items-center gap-3 border-l border-border/60 pl-3">
-                <span className="hidden text-sm text-muted-foreground sm:inline">
-                  {user?.fullName}
+                <span
+                  className="hidden text-sm sm:inline"
+                  title={`Signed in as ${user?.role ?? ""}`}
+                >
+                  <span className="font-medium text-foreground">
+                    {user?.fullName}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {" "}
+                    · {user?.role}
+                  </span>
                 </span>
                 <Button
                   variant="outline"
