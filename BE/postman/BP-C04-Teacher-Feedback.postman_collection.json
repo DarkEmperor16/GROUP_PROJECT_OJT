@@ -1,0 +1,180 @@
+{
+  "info": {
+    "name": "OJT-KNS-SU26 BE - BP-C04 Teacher Feedback",
+    "_postman_id": "c2a3e6c5-a509-46aa-8ec7-6177c1ff0f2e",
+    "description": "Collection chi danh cho BP-C04 (Teacher): summary dashboard, low-rated answers, update review status.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "accessToken", "value": "" },
+    { "key": "courseId", "value": "" },
+    { "key": "answerId", "value": "" },
+    { "key": "from", "value": "2026-01-01T00:00:00.000Z" },
+    { "key": "to", "value": "2026-12-31T23:59:59.999Z" },
+    { "key": "page", "value": "1" },
+    { "key": "limit", "value": "10" }
+  ],
+  "item": [
+    {
+      "name": "BP-C04 Teacher APIs",
+      "item": [
+        {
+          "name": "3) Feedback Summary (Dashboard)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/courses/{{courseId}}/feedback/summary?from={{from}}&to={{to}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "courses", "{{courseId}}", "feedback", "summary"],
+              "query": [
+                { "key": "from", "value": "{{from}}" },
+                { "key": "to", "value": "{{to}}" }
+              ]
+            },
+            "description": "Lay thong ke helpful/not-helpful va helpful rate cho dashboard teacher."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "4) Low-Rated Answers List",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/courses/{{courseId}}/answers/low-rated?from={{from}}&to={{to}}&page={{page}}&limit={{limit}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "courses", "{{courseId}}", "answers", "low-rated"],
+              "query": [
+                { "key": "from", "value": "{{from}}" },
+                { "key": "to", "value": "{{to}}" },
+                { "key": "page", "value": "{{page}}" },
+                { "key": "limit", "value": "{{limit}}" }
+              ]
+            },
+            "description": "Danh sach cau tra loi bi danh gia thap theo rule: helpfulRate < 50 va tong feedback >= 3."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "if (data.items && data.items.length > 0 && data.items[0].answerId) {",
+                  "  pm.collectionVariables.set('answerId', data.items[0].answerId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "5) Mark Answer Review Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reviewStatus\": \"NEEDS_REVIEW\",\n  \"teacherReviewNote\": \"Can verify answer with latest aviation procedure update\"\n}",
+              "options": {
+                "raw": { "language": "json" }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/answers/{{answerId}}/review-status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "answers", "{{answerId}}", "review-status"]
+            },
+            "description": "Teacher cap nhat trang thai review: NEEDS_REVIEW | IN_PROGRESS | RESOLVED."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "5) Mark Answer Review Status - In Progress",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reviewStatus\": \"IN_PROGRESS\",\n  \"teacherReviewNote\": \"Teacher is checking citation quality\"\n}",
+              "options": {
+                "raw": { "language": "json" }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/answers/{{answerId}}/review-status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "answers", "{{answerId}}", "review-status"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "5) Mark Answer Review Status - Resolved",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reviewStatus\": \"RESOLVED\",\n  \"teacherReviewNote\": \"Reviewed and resolved\"\n}",
+              "options": {
+                "raw": { "language": "json" }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/answers/{{answerId}}/review-status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "answers", "{{answerId}}", "review-status"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
