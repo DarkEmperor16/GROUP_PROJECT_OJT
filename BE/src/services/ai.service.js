@@ -66,7 +66,56 @@ async function requestDocumentIndex(payload) {
   }
 }
 
+async function notifyDocumentStatusChange(payload) {
+  const aiServiceUrl = process.env.AI_SERVICE_URL;
+
+  if (!aiServiceUrl) {
+    return {
+      accepted: true,
+      providerStatus: payload.status,
+    };
+  }
+
+  const endpoint = `${aiServiceUrl.replace(/\/$/, '')}/documents/status`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(process.env.AI_SERVICE_API_KEY ? { Authorization: `Bearer ${process.env.AI_SERVICE_API_KEY}` } : {}),
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      return {
+        accepted: false,
+        errorMessage: data.message || 'AI Service rejected document status update',
+      };
+    }
+
+    return {
+      accepted: true,
+      providerStatus: data.status || payload.status,
+    };
+  } catch (error) {
+    return {
+      accepted: false,
+      errorMessage: error.name === 'AbortError' ? 'AI Service timeout' : 'AI Service unavailable',
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 module.exports = {
   buildIndexPayload,
   requestDocumentIndex,
+  notifyDocumentStatusChange,
 };

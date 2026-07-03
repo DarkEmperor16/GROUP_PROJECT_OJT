@@ -2,9 +2,10 @@ const path = require('path');
 const mongoose = require('mongoose');
 const Course = require('../models/Course');
 const CourseDocument = require('../models/CourseDocument');
-const { buildIndexPayload, requestDocumentIndex } = require('../services/ai.service');
+const { buildIndexPayload, requestDocumentIndex, notifyDocumentStatusChange } = require('../services/ai.service');
 
 const DOCUMENT_STATUSES = new Set(['uploaded', 'processing', 'active', 'failed', 'inactive']);
+const TEACHER_ALLOWED_DOCUMENT_STATUSES = new Set(['active', 'inactive']);
 
 function formatDocumentResponse(document) {
   return {
@@ -224,6 +225,71 @@ async function reindexDocument(req, res) {
   });
 }
 
+async function updateDocumentActiveStatus(req, res) {
+  const { documentId } = req.params;
+  const { status } = req.body;
+
+  if (!isValidObjectId(documentId)) {
+    return res.status(400).json({
+      message: 'Invalid documentId',
+    });
+  }
+
+  if (!TEACHER_ALLOWED_DOCUMENT_STATUSES.has(status)) {
+    return res.status(400).json({
+      message: 'Teacher can only set document status to active or inactive',
+    });
+  }
+
+  const document = await CourseDocument.findById(documentId);
+
+  if (!document) {
+    return res.status(404).json({
+      message: 'Document not found',
+    });
+  }
+
+  const auth = await findCourseAndAuthorizeTeacher(document.courseId, req.user._id);
+
+  if (auth.error) {
+    return res.status(auth.error.statusCode).json({ message: auth.error.message });
+  }
+
+  if (document.status === status) {
+    return res.json({
+      message: 'Document status unchanged',
+      document: formatDocumentResponse(document),
+    });
+  }
+
+  const aiResult = await notifyDocumentStatusChange({
+    documentId: document._id.toString(),
+    courseId: auth.course._id.toString(),
+    status,
+    updatedBy: req.user._id.toString(),
+  });
+
+  if (!aiResult.accepted) {
+    return res.status(502).json({
+      message: aiResult.errorMessage,
+    });
+  }
+
+  document.status = status;
+
+  if (status === 'active') {
+    document.aiErrorMessage = null;
+    document.indexedAt = document.indexedAt || new Date();
+  }
+
+  await document.save();
+
+  return res.json({
+    message: 'Document status updated successfully',
+    document: formatDocumentResponse(document),
+  });
+}
+
 async function updateDocumentStatus(req, res) {
   const { documentId } = req.params;
   const { status, errorMessage = null } = req.body;
@@ -278,5 +344,6 @@ module.exports = {
   listCourseDocuments,
   getDocumentDetail,
   reindexDocument,
+  updateDocumentActiveStatus,
   updateDocumentStatus,
 };
