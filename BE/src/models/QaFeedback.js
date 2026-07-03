@@ -38,5 +38,7 @@ const qaFeedbackSchema = new mongoose.Schema(
 );
 
 qaFeedbackSchema.index({ qaRecordId: 1, studentId: 1 }, { unique: true });
+qaFeedbackSchema.index({ courseId: 1, createdAt: -1 });
+qaFeedbackSchema.index({ qaRecordId: 1, rating: 1 });
 
 module.exports = mongoose.model('QaFeedback', qaFeedbackSchema);

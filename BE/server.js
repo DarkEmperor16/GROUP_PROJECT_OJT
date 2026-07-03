@@ -7,6 +7,7 @@ require('dotenv').config();
 const authRoutes = require('./src/routes/auth.routes');
 const teacherKnowledgeRoutes = require('./src/routes/teacherKnowledge.routes');
 const teacherFeedbackRoutes = require('./src/routes/teacherFeedback.routes');
+const teacherHistoryRoutes = require('./src/routes/teacherHistory.routes');
 const internalAiRoutes = require('./src/routes/internalAi.routes');
 const { connectDB } = require('./src/config/db');
 
@@ -25,6 +26,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/teacher', teacherKnowledgeRoutes);
 app.use('/api/teacher', teacherFeedbackRoutes);
+app.use('/api/teacher', teacherHistoryRoutes);
 app.use('/api/internal/ai', internalAiRoutes);
 app.get('/api/admin/test', authenticateToken, authorizeRoles('ADMIN'), (req, res) => {
   res.json({

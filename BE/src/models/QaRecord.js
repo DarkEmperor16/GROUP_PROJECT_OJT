@@ -74,4 +74,7 @@ const qaRecordSchema = new mongoose.Schema(
   },
 );
 
+qaRecordSchema.index({ courseId: 1, createdAt: -1 });
+qaRecordSchema.index({ courseId: 1, aiStatus: 1, reviewStatus: 1, confidenceStatus: 1 });
+
 module.exports = mongoose.model('QaRecord', qaRecordSchema);
