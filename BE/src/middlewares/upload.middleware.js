@@ -11,6 +11,7 @@ if (!fs.existsSync(uploadDir)) {
 const allowedMimeTypes = new Set([
   'application/pdf',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   'text/plain',
 ]);
 
@@ -34,7 +35,7 @@ const uploadCourseDocument = multer({
   },
   fileFilter(req, file, cb) {
     if (!allowedMimeTypes.has(file.mimetype)) {
-      return cb(new Error('Unsupported file type. Allowed: PDF, DOCX, TXT'));
+      return cb(new Error('Unsupported file type. Allowed: PDF, DOCX, PPTX, TXT'));
     }
 
     return cb(null, true);

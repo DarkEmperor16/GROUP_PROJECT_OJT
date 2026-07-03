@@ -5,6 +5,7 @@ const { authenticateToken, authorizeRoles } = require('./src/middlewares/auth.mi
 require('dotenv').config();
 
 const authRoutes = require('./src/routes/auth.routes');
+const teacherCourseRoutes = require('./src/routes/teacherCourse.routes');
 const teacherKnowledgeRoutes = require('./src/routes/teacherKnowledge.routes');
 const teacherFeedbackRoutes = require('./src/routes/teacherFeedback.routes');
 const teacherHistoryRoutes = require('./src/routes/teacherHistory.routes');
@@ -25,6 +26,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/teacher', teacherCourseRoutes);
 app.use('/api/teacher', teacherKnowledgeRoutes);
 app.use('/api/teacher', teacherFeedbackRoutes);
 app.use('/api/teacher', teacherHistoryRoutes);
