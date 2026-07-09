@@ -106,8 +106,10 @@ npm run preview # preview build
 - [x] Form validation nâng cao — `utils/rules.ts`, RHF `onTouched`
 - [x] Dynamic routing theo role — `features/auth/config/roleRoutes.ts`
 - [x] Lazy loading — `lib/lazyRoute.ts`, login/home lazy chunks
-- [x] Student sub-pages (Vũ) — Ask AI, Quiz, History trên `dev`
-- [ ] Teacher / Admin dashboard — Long, Quốc Anh
+- [x] Security scaffold — `auth/security/` (2FA UI, audit table, login alerts) — `bf5d27d`
+- [x] Role nav + perf — `roleNav.ts`, eager prefetch, `RoutePendingBar`, `PageSkeleton` — `a86b4af`
+- [x] Student sub-pages (Vũ) — wired in `roleRoutes.ts`, không sửa `student/`
+- [ ] Teacher / Admin dashboard content — Long, Quốc Anh (`features/dashboard/`)
 
 ---
 
@@ -202,8 +204,8 @@ src/
 │   ├── router.tsx
 │   └── providers/
 ├── features/               # Business modules
-│   ├── auth/               # Quang — types, schema, store, services, hooks, components, pages
-│   │   └── config/         # roleRoutes.ts — dynamic routing theo role
+│   ├── auth/               # Quang — login, session, security scaffold
+│   │   └── config/         # roleRoutes.ts, roleNav.ts, buildProtectedRoutes
 │   ├── landing/            # HomePage
 │   ├── student/            # Vũ — student pages
 │   └── dashboard/          # placeholder — Long, Quốc Anh
@@ -228,7 +230,11 @@ src/
 | `store.ts` | Zustand persist `ojt-kns-auth` |
 | `services.ts` | `authService.login` / `logout` / `getMe` — normalize response BE |
 | `utils/tokenResponse.ts` | `extractTokenPair` — `accessToken` / legacy `token` |
-| `components/AuthBootstrap.tsx` | Gọi `/auth/me` khi reload app |
+| `components/AuthBootstrap.tsx` | Gọi `/auth/me` khi reload (non-blocking) |
+| `config/roleRoutes.ts` | Đăng ký route lazy theo role |
+| `config/roleNav.ts` | Menu header theo role |
+| `utils/prefetchRoutes.ts` | Prefetch chunk (eager sau login) |
+| `security/` | Audit log + 2FA scaffold (chờ BE) |
 | `hooks/useAuth.ts` | `useLoginMutation`, `useLogoutMutation` |
 | `components/LoginForm.tsx` | Form + role picker |
 | `components/RoleSelector.tsx` | Chọn Student / Teacher / Admin |
@@ -299,40 +305,45 @@ FE gọi khi reload app (`AuthBootstrap`) để xác thực session còn hợp l
 
 ---
 
-## Thêm feature mới
+## Thêm route / page mới (phối hợp team)
 
-1. Page: `src/features/<module>/pages/YourPage.tsx`
-2. Service: `src/features/<module>/services.ts` — normalize response BE tại đây
-3. Hook (nếu cần): `src/features/<module>/hooks/useXxx.ts`
-4. Barrel export: `src/features/<module>/index.ts`
-5. Route: `src/app/router.tsx` + bọc `RoleGuard` đúng role
-6. Nav (nếu cần): `src/shared/layouts/MainLayout.tsx`
+**Owner page** (Vũ / Long / Quốc Anh):
 
-**Lưu ý:** Không duplicate server data vào Zustand — dùng React Query cho API data.
+1. Tạo page trong `features/student/` hoặc `features/dashboard/`
+2. Export từ `index.ts` của feature đó
+
+**Quang** (chỉ wire — không sửa file trong folder actor):
+
+1. Thêm entry trong `features/auth/config/roleRoutes.ts`
+2. Thêm menu (nếu cần) trong `features/auth/config/roleNav.ts`
+3. Commit + push scope Quang
+
+**Lưu ý:** API data dùng React Query — không duplicate vào Zustand.
 
 ---
 
-## Git
+## Git (Quang)
+
+- Nhánh: `dev`
+- **Làm tới đâu → commit + push tới đó**
+- Commit: `git commit-tree` — không `Co-authored-by: Cursor`
+- Trước push: `git diff --cached --name-only` — không có `BE/`, `student/`, `dashboard/`, `LOCAL-QUANG/`, `env.txt`
+
+**Được push:** `features/auth/**`, `app/`, `landing/`, `shared/`, `lib/axios.ts`, `FE/README.md`
 
 ```bash
 git checkout dev
 git pull origin dev
-
-# Feature mới
-git checkout -b feature/your-feature
-# ... code ...
-git push origin feature/your-feature
-# Mở PR merge vào dev
+# ... code scope Quang ...
+git push origin dev
 ```
 
-**Commit format:** `[SE-Fx.x] feat|fix|refactor: mô tả` hoặc `fix(fe-auth): ...`
+**Commit gần nhất (auth/platform):**
 
-**Auth trên `dev` (Quang):**
-
-- `[SE-F1.1] feat: implement login form and auth guards`
-- `fix(fe-auth): align token handling and refresh flow with BE API`
-- `fix(fe-auth): adapt home page and header for logged-in users`
-- `feat(fe-auth): validate session on reload via /auth/me`
+- `a86b4af` — roleNav, eager prefetch, nav perf
+- `bf5d27d` — security scaffold
+- `9ebfbf3` — session perf + prefetch
+- `4b6d6d5` — validation + dynamic routing + lazy loading
 
 ---
 
