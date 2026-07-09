@@ -5,6 +5,7 @@ import { authService } from "@/features/auth/services";
 import { useAuthStore } from "@/features/auth/store";
 import type { LoginRequest } from "@/features/auth/types";
 import { ROLE_HOME_PATH } from "@/features/auth/types";
+import { prefetchRoleRoutes } from "@/features/auth/utils/prefetchRoutes";
 
 export const useLoginMutation = () => {
   const navigate = useNavigate();
@@ -27,6 +28,7 @@ export const useLoginMutation = () => {
       }
 
       setAuth(data.accessToken, data.refreshToken, data.user);
+      prefetchRoleRoutes(data.user.role);
       toast.success("Login successful", {
         description: `Welcome back, ${data.user.fullName}.`,
       });

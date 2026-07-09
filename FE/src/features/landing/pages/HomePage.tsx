@@ -8,6 +8,10 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/features/auth/store";
 import { ROLE_HOME_PATH } from "@/features/auth/types";
+import {
+  prefetchLoginPage,
+  prefetchRoleRoutes,
+} from "@/features/auth/utils/prefetchRoutes";
 import { buttonVariants } from "@/shared/components/ui/button";
 import {
   Card,
@@ -102,6 +106,7 @@ export default function HomePage() {
               <>
                 <Link
                   to={workspacePath}
+                  onMouseEnter={() => user && prefetchRoleRoutes(user.role)}
                   className={cn(buttonVariants({ size: "lg" }), "gap-2")}
                 >
                   {cta.label}
@@ -120,6 +125,7 @@ export default function HomePage() {
               <>
                 <Link
                   to="/login"
+                  onMouseEnter={prefetchLoginPage}
                   className={cn(buttonVariants({ size: "lg" }), "gap-2")}
                 >
                   Sign in
@@ -156,9 +162,12 @@ export default function HomePage() {
               <Link
                 key={title}
                 to={to}
+                onMouseEnter={() => {
+                  if (user?.role === "STUDENT") prefetchRoleRoutes("STUDENT");
+                }}
                 className="group block rounded-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20"
               >
-                <Card className="h-full border-border/60 bg-card/90 backdrop-blur-sm transition-all duration-200 group-hover:-translate-y-1 group-hover:shadow-soft">
+                <Card className="h-full border-border/60 bg-card/90 transition-[transform,box-shadow] duration-150 group-hover:-translate-y-0.5 group-hover:shadow-soft">
                   <CardHeader>
                     <div
                       className={cn(

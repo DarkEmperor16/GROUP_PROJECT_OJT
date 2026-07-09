@@ -147,7 +147,7 @@ export default function LoginForm() {
 
   const form = useForm<LoginSchemaType>({
     resolver: zodResolver(loginSchema),
-    mode: "onTouched",
+    mode: "onBlur",
     reValidateMode: "onChange",
     defaultValues: {
       email: "",
@@ -291,7 +291,7 @@ export default function LoginForm() {
                   size="lg"
                   className="w-full"
                   isLoading={loginMutation.isPending}
-                  disabled={loginMutation.isPending || !form.formState.isValid}
+                  disabled={loginMutation.isPending}
                 >
                   {loginMutation.isPending ? "Signing in..." : "Sign in"}
                 </Button>

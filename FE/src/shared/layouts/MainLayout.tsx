@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { LogOut, Plane } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
@@ -6,12 +6,19 @@ import { PageLoader } from "@/shared/components/common/StatusStates";
 import RouteErrorBoundary from "@/shared/components/common/RouteErrorBoundary";
 import { useAuthStore } from "@/features/auth/store";
 import { useLogoutMutation } from "@/features/auth/hooks/useAuth";
+import { prefetchRoleRoutes } from "@/features/auth/utils/prefetchRoutes";
 import { cn } from "@/lib/utils";
 
 export default function MainLayout() {
   const user = useAuthStore((state) => state.user);
   const accessToken = useAuthStore((state) => state.accessToken);
   const logoutMutation = useLogoutMutation();
+
+  useEffect(() => {
+    if (user?.role) {
+      prefetchRoleRoutes(user.role);
+    }
+  }, [user?.role]);
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
@@ -23,7 +30,7 @@ export default function MainLayout() {
 
   return (
     <div className="login-mesh flex min-h-dvh flex-col">
-      <header className="sticky top-0 z-50 border-b border-border/60 bg-background/85 backdrop-blur-md">
+      <header className="sticky top-0 z-50 border-b border-border/60 bg-background/95">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
           <Link
             to="/"
@@ -39,7 +46,11 @@ export default function MainLayout() {
             </NavLink>
 
             {accessToken && user?.role === "STUDENT" && (
-              <NavLink to="/student" className={navLinkClass}>
+              <NavLink
+                to="/student"
+                className={navLinkClass}
+                onMouseEnter={() => prefetchRoleRoutes("STUDENT")}
+              >
                 Learning
               </NavLink>
             )}

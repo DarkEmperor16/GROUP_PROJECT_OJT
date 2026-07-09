@@ -1,15 +1,18 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { authService } from "@/features/auth/services";
 import { useAuthStore } from "@/features/auth/store";
-import { PageLoader } from "@/shared/components/common/StatusStates";
+import { prefetchRoleRoutes } from "@/features/auth/utils/prefetchRoutes";
 
-/** Validate persisted session with BE on app load. */
+/**
+ * Validate session in the background — do not block first paint.
+ * Uses cached auth from localStorage while /me refreshes user data.
+ */
 export default function AuthBootstrap({ children }: { children: ReactNode }) {
   const accessToken = useAuthStore((state) => state.accessToken);
   const refreshToken = useAuthStore((state) => state.refreshToken);
+  const user = useAuthStore((state) => state.user);
   const setAuth = useAuthStore((state) => state.setAuth);
   const clearAuth = useAuthStore((state) => state.clearAuth);
-  const [ready, setReady] = useState(!accessToken);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -18,19 +21,14 @@ export default function AuthBootstrap({ children }: { children: ReactNode }) {
 
     authService
       .getMe()
-      .then((user) => {
+      .then((freshUser) => {
         if (!cancelled) {
-          setAuth(accessToken, refreshToken ?? "", user);
+          setAuth(accessToken, refreshToken ?? "", freshUser);
         }
       })
       .catch(() => {
         if (!cancelled) {
           clearAuth();
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setReady(true);
         }
       });
 
@@ -39,9 +37,11 @@ export default function AuthBootstrap({ children }: { children: ReactNode }) {
     };
   }, [accessToken, refreshToken, setAuth, clearAuth]);
 
-  if (!ready) {
-    return <PageLoader />;
-  }
+  useEffect(() => {
+    if (user?.role) {
+      prefetchRoleRoutes(user.role);
+    }
+  }, [user?.role]);
 
   return children;
 }
