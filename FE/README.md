@@ -47,11 +47,11 @@ npm install
 npm run dev
 ```
 
-**BE (Chinh)** — chạy song song port 3000, cần MongoDB (hỏi team file `env` / Atlas):
+**BE (Chinh)** — chạy song song port 3000. FE **không** kết nối MongoDB trực tiếp; chỉ gọi API auth. DB chung do Chinh quản lý — thiếu user thì nhờ Chinh, không seed/register từ FE.
 
 ```bash
 cd BE
-cp .env.example .env   # thêm MONGODB_URI hoặc DB_USERNAME/DB_PASSWORD
+cp .env.example .env   # thêm MONGODB_URI từ team (local only, không commit)
 npm install
 npm run dev
 ```
@@ -95,8 +95,10 @@ npm run preview # preview build
 - [x] shadcn/ui login + home
 - [x] Role picker (3 roles: Student / Teacher / Admin)
 - [x] Cấu trúc thư mục theo [main-course-project](https://github.com/kat-minh/main-course-project)
-- [x] Login end-to-end với BE (MongoDB + JWT)
+- [x] Login end-to-end với BE (MongoDB chung + JWT)
 - [x] Refresh token — `POST /api/auth/refresh-token`
+- [x] Session reload — `AuthBootstrap` + `GET /api/auth/me`
+- [x] Home UX khi đã login (ẩn Sign in, link feature cards)
 - [x] Student sub-pages (Vũ) — Ask AI, Quiz, History trên `dev`
 - [ ] Teacher / Admin dashboard — Long, Quốc Anh
 
@@ -156,7 +158,8 @@ sequenceDiagram
 3. Tokens + user → Zustand persist key `ojt-kns-auth` (localStorage)
 4. `apiClient` gắn `Authorization: Bearer` + `withCredentials` (refresh cookie)
 5. 401 (trừ `/login`, `/logout`, `/refresh-token`) → refresh → fail → redirect `/login`
-6. Logout → clear store + React Query cache
+6. Reload app → `AuthBootstrap` gọi `/auth/me` → cập nhật user hoặc clear session
+7. Logout → clear store + React Query cache
 
 ---
 
@@ -214,7 +217,7 @@ src/
 | `types.ts` | `UserRole`, `LoginRequest`, `ROLE_HOME_PATH` |
 | `schema.ts` | Zod `loginSchema` |
 | `store.ts` | Zustand persist `ojt-kns-auth` |
-| `services.ts` | `authService.login` / `logout` — normalize response BE |
+| `services.ts` | `authService.login` / `logout` / `getMe` — normalize response BE |
 | `utils/tokenResponse.ts` | `extractTokenPair` — `accessToken` / legacy `token` |
 | `components/AuthBootstrap.tsx` | Gọi `/auth/me` khi reload app |
 | `hooks/useAuth.ts` | `useLoginMutation`, `useLogoutMutation` |
@@ -318,8 +321,9 @@ git push origin feature/your-feature
 **Auth trên `dev` (Quang):**
 
 - `[SE-F1.1] feat: implement login form and auth guards`
-- `[SE-F1.1] refactor: align FE structure with main-course-project pattern`
 - `fix(fe-auth): align token handling and refresh flow with BE API`
+- `fix(fe-auth): adapt home page and header for logged-in users`
+- `feat(fe-auth): validate session on reload via /auth/me`
 
 ---
 

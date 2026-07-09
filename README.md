@@ -4,10 +4,9 @@ Hello
 
 Tài liệu đầy đủ: **[FE/README.md](./FE/README.md)**
 
-- Login E2E với BE (MongoDB + JWT)
-- Session, guards, refresh token
-- Student sub-pages (Vũ) đã có trên `dev`
-- API contract + hướng dẫn chạy local
+- Login E2E qua BE API (MongoDB chung — FE chỉ đọc qua API, không đụng DB)
+- Session, guards, refresh token, `AuthBootstrap` (`/auth/me`)
+- Home UX + student sub-pages (Vũ) trên `dev`
 
 PR target: **`dev`** — không merge thẳng `main`
 
