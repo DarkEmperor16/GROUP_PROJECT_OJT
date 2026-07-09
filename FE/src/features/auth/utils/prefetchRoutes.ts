@@ -14,23 +14,40 @@ function scheduleIdle(task: () => void) {
   setTimeout(task, 0);
 }
 
-/** Preload JS chunk for the user's role — reduces delay on first navigation. */
-export function prefetchRoleRoutes(role: UserRole) {
+interface PrefetchOptions {
+  /** Tải chunk ngay — dùng sau login / hover nav */
+  eager?: boolean;
+}
+
+/** Preload JS chunk theo role — giảm delay lần đầu vào workspace. */
+export function prefetchRoleRoutes(role: UserRole, options?: PrefetchOptions) {
   const load = ROLE_MODULE_LOADERS[role];
   if (!load) return;
+
+  if (options?.eager) {
+    void load();
+    return;
+  }
+
   scheduleIdle(() => {
     void load();
   });
 }
 
-export function prefetchLoginPage() {
-  scheduleIdle(() => {
-    void import("@/features/auth");
-  });
+export function prefetchLoginPage(options?: PrefetchOptions) {
+  const load = () => import("@/features/auth");
+  if (options?.eager) {
+    void load();
+    return;
+  }
+  scheduleIdle(() => void load());
 }
 
-export function prefetchHomePage() {
-  scheduleIdle(() => {
-    void import("@/features/landing");
-  });
+export function prefetchHomePage(options?: PrefetchOptions) {
+  const load = () => import("@/features/landing");
+  if (options?.eager) {
+    void load();
+    return;
+  }
+  scheduleIdle(() => void load());
 }

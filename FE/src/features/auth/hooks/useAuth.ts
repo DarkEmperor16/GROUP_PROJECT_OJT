@@ -29,7 +29,7 @@ export const useLoginMutation = () => {
       }
 
       setAuth(data.accessToken, data.refreshToken, data.user);
-      prefetchRoleRoutes(data.user.role);
+      prefetchRoleRoutes(data.user.role, { eager: true });
       toast.success("Login successful", {
         description: `Welcome back, ${data.user.fullName}.`,
       });

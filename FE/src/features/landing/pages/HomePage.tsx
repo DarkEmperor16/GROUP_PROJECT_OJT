@@ -106,7 +106,9 @@ export default function HomePage() {
               <>
                 <Link
                   to={workspacePath}
-                  onMouseEnter={() => user && prefetchRoleRoutes(user.role)}
+                  onMouseEnter={() =>
+                    user && prefetchRoleRoutes(user.role, { eager: true })
+                  }
                   className={cn(buttonVariants({ size: "lg" }), "gap-2")}
                 >
                   {cta.label}
@@ -125,7 +127,7 @@ export default function HomePage() {
               <>
                 <Link
                   to="/login"
-                  onMouseEnter={prefetchLoginPage}
+                  onMouseEnter={() => prefetchLoginPage({ eager: true })}
                   className={cn(buttonVariants({ size: "lg" }), "gap-2")}
                 >
                   Sign in
@@ -163,7 +165,9 @@ export default function HomePage() {
                 key={title}
                 to={to}
                 onMouseEnter={() => {
-                  if (user?.role === "STUDENT") prefetchRoleRoutes("STUDENT");
+                  if (user?.role === "STUDENT") {
+                    prefetchRoleRoutes("STUDENT", { eager: true });
+                  }
                 }}
                 className="group block rounded-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20"
               >

@@ -5,8 +5,8 @@ Hệ thống hỗ trợ học tập AI cho Aviation Academy.
 | | |
 |---|---|
 | **Nhánh làm việc** | `dev` (auth đã merge; có thể tách `feature/duy-quang` khi cần) |
-| **Requirement** | SE-F1 — Authentication & Authorization |
-| **Owner** | **Quang** — login, session, guards, layout, API client |
+| **Requirement** | SE-F1 (Auth) + **FE platform** (router, layout, kết nối 3 actor) |
+| **Owner** | **Quang** — auth, session, guards, layout, route/nav config, API client |
 | **PR target** | `dev` (không merge thẳng `main`) |
 | **Liên hệ BE** | **Chinh** — Auth API |
 
@@ -16,13 +16,17 @@ Hệ thống hỗ trợ học tập AI cho Aviation Academy.
 
 ## Mục tiêu nhánh này
 
-Nền tảng Frontend cho đăng nhập và phân quyền. Các AE tiếp tục build feature trên scaffold này:
+**Quang** dựng khung FE (auth, router, layout, nav, prefetch).
 
-| AE | Role | Route sau login | Folder làm việc |
-|----|------|-----------------|-----------------|
-| **Vũ** | Student | `/student` (+ sub-pages) | `src/features/student/` |
-| **Long** | Teacher | `/teacher/dashboard` | `src/features/dashboard/` |
-| **Quốc Anh** | Admin | `/admin/dashboard` | `src/features/dashboard/` |
+**Cấm đụng:** `BE/**` · `features/student/**` · `features/dashboard/**` (teacher + admin).
+
+| AE | Role | Folder | Quy tắc |
+|----|------|--------|---------|
+| **Vũ** | Student | `src/features/student/` | Chỉ Vũ sửa |
+| **Long** | Teacher | `src/features/dashboard/` | Chỉ Long sửa |
+| **Quốc Anh** | Admin | `src/features/dashboard/` | Chỉ Quốc Anh sửa |
+
+**Quang** chỉ wire ở `src/features/auth/config/` (route + nav) — **không mở file** trong 3 folder actor trên.
 
 **Quy tắc sản phẩm:**
 
