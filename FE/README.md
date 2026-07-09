@@ -99,6 +99,9 @@ npm run preview # preview build
 - [x] Refresh token — `POST /api/auth/refresh-token`
 - [x] Session reload — `AuthBootstrap` + `GET /api/auth/me`
 - [x] Home UX khi đã login (ẩn Sign in, link feature cards)
+- [x] Form validation nâng cao — `utils/rules.ts`, RHF `onTouched`
+- [x] Dynamic routing theo role — `features/auth/config/roleRoutes.ts`
+- [x] Lazy loading — `lib/lazyRoute.ts`, login/home lazy chunks
 - [x] Student sub-pages (Vũ) — Ask AI, Quiz, History trên `dev`
 - [ ] Teacher / Admin dashboard — Long, Quốc Anh
 
@@ -196,6 +199,7 @@ src/
 │   └── providers/
 ├── features/               # Business modules
 │   ├── auth/               # Quang — types, schema, store, services, hooks, components, pages
+│   │   └── config/         # roleRoutes.ts — dynamic routing theo role
 │   ├── landing/            # HomePage
 │   ├── student/            # Vũ — student pages
 │   └── dashboard/          # placeholder — Long, Quốc Anh
@@ -206,7 +210,8 @@ src/
 │   ├── layouts/            # MainLayout
 │   ├── constants/          # API_ENDPOINTS, QUERY_KEYS
 │   └── types/
-├── lib/                    # axios, queryClient, utils
+├── lib/                    # axios, queryClient, lazyRoute, utils
+├── utils/                  # rules.ts — Zod validation rules dùng chung
 └── styles/                 # globals.css
 ```
 
