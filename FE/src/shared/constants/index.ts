@@ -9,4 +9,5 @@ export const API_ENDPOINTS = {
 
 export const QUERY_KEYS = {
   AUTH: ["auth"] as const,
+  AUDIT_LOGS: ["auth", "audit-logs"] as const,
 } as const;

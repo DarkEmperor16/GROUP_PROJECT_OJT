@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { authService } from "@/features/auth/services";
+import { parseAuthSecurityError } from "@/features/auth/security";
 import { useAuthStore } from "@/features/auth/store";
 import type { LoginRequest } from "@/features/auth/types";
 import { ROLE_HOME_PATH } from "@/features/auth/types";
@@ -37,12 +38,9 @@ export const useLoginMutation = () => {
       navigate(homePath, { replace: true });
     },
     onError: (error: unknown) => {
-      const message =
-        (error as { response?: { data?: { message?: string } } })?.response
-          ?.data?.message ?? "Invalid credentials or server unavailable.";
-
-      toast.error("Login failed", {
-        description: message,
+      const parsed = parseAuthSecurityError(error);
+      toast.error(parsed.title, {
+        description: parsed.description,
       });
     },
   });

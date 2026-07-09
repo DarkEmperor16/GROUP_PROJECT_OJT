@@ -26,6 +26,17 @@ import { Input } from "@/shared/components/ui/input";
 import RoleSelector from "@/features/auth/components/RoleSelector";
 import { useLoginMutation } from "@/features/auth/hooks/useAuth";
 import { loginSchema, type LoginSchemaType } from "@/features/auth/schema";
+import {
+  AuthSecurityAlert,
+  TwoFactorForm,
+  getTwoFactorChallengeToken,
+  isTwoFactorRequired,
+  parseAuthSecurityError,
+} from "@/features/auth/security";
+import type {
+  AuthSecurityAlert as AuthSecurityAlertModel,
+  TwoFactorChallenge,
+} from "@/features/auth/security/types";
 
 const highlights = [
   {
@@ -144,6 +155,10 @@ export default function LoginForm() {
   const location = useLocation();
   const loginMutation = useLoginMutation();
   const [showPassword, setShowPassword] = useState(false);
+  const [securityAlert, setSecurityAlert] =
+    useState<AuthSecurityAlertModel | null>(null);
+  const [twoFactorChallenge, setTwoFactorChallenge] =
+    useState<TwoFactorChallenge | null>(null);
 
   const form = useForm<LoginSchemaType>({
     resolver: zodResolver(loginSchema),
@@ -159,6 +174,27 @@ export default function LoginForm() {
   const redirectFrom = (
     location.state as { from?: { pathname: string } } | null
   )?.from?.pathname;
+
+  const handleLogin = (data: LoginSchemaType) => {
+    setSecurityAlert(null);
+    setTwoFactorChallenge(null);
+
+    loginMutation.mutate(data, {
+      onError: (error) => {
+        if (isTwoFactorRequired(error)) {
+          const challengeToken = getTwoFactorChallengeToken(error);
+          if (challengeToken) {
+            setTwoFactorChallenge({
+              challengeToken,
+              email: data.email,
+            });
+            return;
+          }
+        }
+        setSecurityAlert(parseAuthSecurityError(error));
+      },
+    });
+  };
 
   return (
     <div className="login-mesh flex min-h-dvh">
@@ -193,9 +229,22 @@ export default function LoginForm() {
               </Alert>
             )}
 
+            {securityAlert && !twoFactorChallenge && (
+              <AuthSecurityAlert {...securityAlert} />
+            )}
+
+            {twoFactorChallenge ? (
+              <TwoFactorForm
+                challenge={twoFactorChallenge}
+                onBack={() => {
+                  setTwoFactorChallenge(null);
+                  setSecurityAlert(null);
+                }}
+              />
+            ) : (
             <Form {...form}>
               <form
-                onSubmit={form.handleSubmit((data) => loginMutation.mutate(data))}
+                onSubmit={form.handleSubmit(handleLogin)}
                 className="space-y-5"
               >
                 <FormField
@@ -297,6 +346,7 @@ export default function LoginForm() {
                 </Button>
               </form>
             </Form>
+            )}
           </div>
 
           <p className="mt-6 text-center text-xs leading-relaxed text-muted-foreground">
