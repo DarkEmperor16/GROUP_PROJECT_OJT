@@ -67,13 +67,15 @@ npm run lint    # ESLint
 npm run preview # preview build
 ```
 
-**Tài khoản test (MongoDB team):**
+**Tài khoản test (MongoDB team — Atlas chung):**
 
-| Role | Email | Password |
-|------|-------|----------|
-| STUDENT | `student@academy.edu` | `123456` |
-| TEACHER | `teacher@academy.edu` | `123456` |
-| ADMIN | `admin@academy.edu` | `123456` |
+| Role | Email | Password | Ghi chú |
+|------|-------|----------|---------|
+| STUDENT | `student@academy.edu` | `123456` | Account seed team |
+| STUDENT | `quang27110910@gmail.com` | `123456` | Account cá nhân |
+| TEACHER | `quangdnis@gmail.com` | `123456` | Teacher trên DB chung |
+| TEACHER | `teacher@academy.edu` | — | Chưa có trên DB — nhờ Chinh seed |
+| ADMIN | `admin@academy.edu` | — | Chưa có trên DB — nhờ Chinh seed |
 
 Đăng nhập FE: chọn **đúng role** khớp `user.role` từ BE.
 
@@ -214,6 +216,7 @@ src/
 | `store.ts` | Zustand persist `ojt-kns-auth` |
 | `services.ts` | `authService.login` / `logout` — normalize response BE |
 | `utils/tokenResponse.ts` | `extractTokenPair` — `accessToken` / legacy `token` |
+| `components/AuthBootstrap.tsx` | Gọi `/auth/me` khi reload app |
 | `hooks/useAuth.ts` | `useLoginMutation`, `useLogoutMutation` |
 | `components/LoginForm.tsx` | Form + role picker |
 | `components/RoleSelector.tsx` | Chọn Student / Teacher / Admin |
@@ -278,7 +281,9 @@ FE ưu tiên `accessToken`; chấp nhận legacy field `token` và wrapper `resu
 
 ### `POST /api/auth/refresh-token` — body `{ refreshToken }` hoặc httpOnly cookie
 
-### `GET /api/auth/me` — Bearer required (chưa dùng trên FE)
+### `GET /api/auth/me` — Bearer required
+
+FE gọi khi reload app (`AuthBootstrap`) để xác thực session còn hợp lệ.
 
 ---
 

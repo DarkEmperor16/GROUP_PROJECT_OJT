@@ -40,6 +40,18 @@ export const authService = {
   async logout(): Promise<void> {
     await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT);
   },
+
+  async getMe(): Promise<LoginResponse["user"]> {
+    const data = (await apiClient.get(API_ENDPOINTS.AUTH.ME)) as {
+      user?: LoginResponse["user"];
+    };
+
+    if (!data.user) {
+      throw new Error("Invalid session response from server");
+    }
+
+    return data.user;
+  },
 };
 
 /** @deprecated Use authService */

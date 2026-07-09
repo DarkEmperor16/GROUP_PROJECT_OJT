@@ -3,6 +3,7 @@ export const API_ENDPOINTS = {
     LOGIN: "/auth/login",
     LOGOUT: "/auth/logout",
     REFRESH: "/auth/refresh-token",
+    ME: "/auth/me",
   },
 } as const;
 

@@ -1,4 +1,5 @@
 export { default as LoginPage } from "./pages/LoginPage";
+export { default as AuthBootstrap } from "./components/AuthBootstrap";
 export { useAuthStore } from "./store";
 export { authService } from "./services";
 export { useLoginMutation, useLogoutMutation } from "./hooks/useAuth";
