@@ -7,6 +7,24 @@ const LOW_RATED_THRESHOLD = 50;
 const LOW_RATED_MIN_FEEDBACK = 3;
 const REVIEW_STATUSES = new Set(['NEEDS_REVIEW', 'IN_PROGRESS', 'RESOLVED']);
 
+function normalizeReviewStatus(value) {
+  if (!value) {
+    return value;
+  }
+
+  const normalized = value.toString().trim().toUpperCase();
+
+  if (normalized === 'REVIEW_REQUIRED') {
+    return 'NEEDS_REVIEW';
+  }
+
+  if (normalized === 'RESOLVED') {
+    return 'RESOLVED';
+  }
+
+  return normalized;
+}
+
 function isValidObjectId(value) {
   return mongoose.Types.ObjectId.isValid(value);
 }
@@ -301,7 +319,10 @@ async function getLowRatedAnswers(req, res) {
       limit,
       totalPages: Math.max(1, Math.ceil(total / limit)),
     },
-    items: rows,
+    items: rows.map((row) => ({
+      ...row,
+      reviewStatusAlias: row.reviewStatus === 'NEEDS_REVIEW' ? 'REVIEW_REQUIRED' : row.reviewStatus,
+    })),
     lowRatedRule: {
       helpfulRateLt: LOW_RATED_THRESHOLD,
       minFeedback: LOW_RATED_MIN_FEEDBACK,
@@ -311,7 +332,8 @@ async function getLowRatedAnswers(req, res) {
 
 async function updateAnswerReviewStatus(req, res) {
   const { answerId } = req.params;
-  const { reviewStatus, teacherReviewNote = '' } = req.body;
+  const { teacherReviewNote = '' } = req.body;
+  const reviewStatus = normalizeReviewStatus(req.body.reviewStatus);
 
   if (!isValidObjectId(answerId)) {
     return res.status(400).json({
@@ -352,6 +374,7 @@ async function updateAnswerReviewStatus(req, res) {
       id: answer._id,
       courseId: answer.courseId,
       reviewStatus: answer.reviewStatus,
+      reviewStatusAlias: answer.reviewStatus === 'NEEDS_REVIEW' ? 'REVIEW_REQUIRED' : answer.reviewStatus,
       teacherReviewNote: answer.teacherReviewNote,
       reviewedBy: answer.reviewedBy,
       reviewedAt: answer.reviewedAt,
@@ -364,4 +387,5 @@ module.exports = {
   getFeedbackSummary,
   getLowRatedAnswers,
   updateAnswerReviewStatus,
+  normalizeReviewStatus,
 };

@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Course = require('../models/Course');
 const QaRecord = require('../models/QaRecord');
 const QaFeedback = require('../models/QaFeedback');
+const { normalizeReviewStatus } = require('./teacherFeedback.controller');
 
 const HISTORY_SORT_FIELDS = new Set(['createdAt', 'question', 'confidenceStatus', 'aiStatus', 'reviewStatus']);
 
@@ -88,7 +89,7 @@ function buildHistoryMatch(req, courseIds) {
   }
 
   if (reviewStatus) {
-    match.reviewStatus = reviewStatus;
+    match.reviewStatus = normalizeReviewStatus(reviewStatus);
   }
 
   if (confidenceStatus) {
@@ -265,6 +266,7 @@ async function getHistoryList(req, res) {
       confidenceStatus: item.confidenceStatus,
       aiStatus: item.aiStatus,
       reviewStatus: item.reviewStatus,
+      reviewStatusAlias: item.reviewStatus === 'NEEDS_REVIEW' ? 'REVIEW_REQUIRED' : item.reviewStatus,
       teacherReviewNote: item.teacherReviewNote,
       feedbackSummary: item.feedbackSummary,
       createdAt: item.createdAt,
@@ -312,6 +314,7 @@ async function getHistoryDetail(req, res) {
       confidenceStatus: record.confidenceStatus,
       aiStatus: record.aiStatus,
       reviewStatus: record.reviewStatus,
+      reviewStatusAlias: record.reviewStatus === 'NEEDS_REVIEW' ? 'REVIEW_REQUIRED' : record.reviewStatus,
       teacherReviewNote: record.teacherReviewNote,
       reviewedBy: record.reviewedBy,
       reviewedAt: record.reviewedAt,

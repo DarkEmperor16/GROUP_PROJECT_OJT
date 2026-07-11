@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Course = require('../models/Course');
 const QaRecord = require('../models/QaRecord');
 const QaFeedback = require('../models/QaFeedback');
+const QuizSession = require('../models/QuizSession');
 
 const LOW_RATED_THRESHOLD = 50;
 const LOW_RATED_MIN_FEEDBACK = 3;
@@ -118,6 +119,328 @@ function buildFeedbackMatch(courseId, range) {
   }
 
   return match;
+}
+
+function buildQuizSessionMatch(courseId, range) {
+  const match = {
+    courseId: new mongoose.Types.ObjectId(courseId),
+  };
+
+  if (range) {
+    match.startedAt = range;
+  }
+
+  return match;
+}
+
+async function getHelpfulFeedbackSummary(req, res) {
+  const { courseId, from, to } = req.query;
+
+  const auth = await authorizeTeacherForCourse(courseId, req.user._id);
+
+  if (auth.error) {
+    return res.status(auth.error.statusCode).json({ message: auth.error.message });
+  }
+
+  const parsedRange = parseDateRange(from, to);
+
+  if (parsedRange.error) {
+    return res.status(400).json({ message: parsedRange.error });
+  }
+
+  const feedbackMatch = buildFeedbackMatch(courseId, parsedRange.range);
+  const ratingStats = await QaFeedback.aggregate([
+    { $match: feedbackMatch },
+    { $group: { _id: '$rating', count: { $sum: 1 } } },
+  ]);
+
+  const helpfulCount = ratingStats.find((item) => item._id === 'HELPFUL')?.count || 0;
+  const notHelpfulCount = ratingStats.find((item) => item._id === 'NOT_HELPFUL')?.count || 0;
+  const totalFeedback = helpfulCount + notHelpfulCount;
+  const helpfulRate = totalFeedback === 0 ? 0 : Number(((helpfulCount / totalFeedback) * 100).toFixed(2));
+
+  return res.json({
+    filters: {
+      courseId,
+      from: from || null,
+      to: to || null,
+    },
+    summary: {
+      usefulFeedback: helpfulCount,
+      totalFeedback,
+      helpfulCount,
+      notHelpfulCount,
+      helpfulRate,
+      notHelpfulRate: totalFeedback === 0 ? 0 : Number(((notHelpfulCount / totalFeedback) * 100).toFixed(2)),
+    },
+  });
+}
+
+async function getHelpfulFeedbackTrends(req, res) {
+  const { courseId, from, to } = req.query;
+  const groupBy = req.query.groupBy === 'day' ? 'day' : 'week';
+
+  const auth = await authorizeTeacherForCourse(courseId, req.user._id);
+
+  if (auth.error) {
+    return res.status(auth.error.statusCode).json({ message: auth.error.message });
+  }
+
+  const parsedRange = parseDateRange(from, to, { defaultLast7Days: true });
+
+  if (parsedRange.error) {
+    return res.status(400).json({ message: parsedRange.error });
+  }
+
+  const feedbackMatch = buildFeedbackMatch(courseId, parsedRange.range);
+  const format = groupBy === 'day' ? '%Y-%m-%d' : '%G-W%V';
+
+  const items = await QaFeedback.aggregate([
+    { $match: feedbackMatch },
+    {
+      $group: {
+        _id: {
+          $dateToString: {
+            format,
+            date: '$createdAt',
+            timezone: 'UTC',
+          },
+        },
+        totalFeedback: { $sum: 1 },
+        helpfulCount: {
+          $sum: {
+            $cond: [{ $eq: ['$rating', 'HELPFUL'] }, 1, 0],
+          },
+        },
+        notHelpfulCount: {
+          $sum: {
+            $cond: [{ $eq: ['$rating', 'NOT_HELPFUL'] }, 1, 0],
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        period: '$_id',
+        totalFeedback: 1,
+        helpfulCount: 1,
+        notHelpfulCount: 1,
+        helpfulRate: {
+          $cond: [
+            { $eq: ['$totalFeedback', 0] },
+            0,
+            {
+              $round: [
+                {
+                  $multiply: [{ $divide: ['$helpfulCount', '$totalFeedback'] }, 100],
+                },
+                2,
+              ],
+            },
+          ],
+        },
+        notHelpfulRate: {
+          $cond: [
+            { $eq: ['$totalFeedback', 0] },
+            0,
+            {
+              $round: [
+                {
+                  $multiply: [{ $divide: ['$notHelpfulCount', '$totalFeedback'] }, 100],
+                },
+                2,
+              ],
+            },
+          ],
+        },
+      },
+    },
+    { $sort: { period: 1 } },
+  ]);
+
+  return res.json({
+    filters: {
+      courseId,
+      from: from || parsedRange.range?.$gte || null,
+      to: to || parsedRange.range?.$lte || null,
+      groupBy,
+      defaultRangeApplied: parsedRange.derivedDefault,
+    },
+    items,
+  });
+}
+
+async function getAiUsageSummary(req, res) {
+  const { courseId, from, to } = req.query;
+
+  const auth = await authorizeTeacherForCourse(courseId, req.user._id);
+
+  if (auth.error) {
+    return res.status(auth.error.statusCode).json({ message: auth.error.message });
+  }
+
+  const parsedRange = parseDateRange(from, to);
+
+  if (parsedRange.error) {
+    return res.status(400).json({ message: parsedRange.error });
+  }
+
+  const qaMatch = buildQaMatch(courseId, parsedRange.range);
+  const quizSessionMatch = buildQuizSessionMatch(courseId, parsedRange.range);
+
+  const [questionCount, studentsAskedRows, quizSessionCount, quizSessionStudentsRows] = await Promise.all([
+    QaRecord.countDocuments(qaMatch),
+    QaRecord.aggregate([
+      { $match: qaMatch },
+      { $group: { _id: '$studentId' } },
+    ]),
+    QuizSession.countDocuments(quizSessionMatch),
+    QuizSession.aggregate([
+      { $match: quizSessionMatch },
+      { $group: { _id: '$studentId' } },
+    ]),
+  ]);
+
+  const askedStudentIds = new Set(studentsAskedRows.map((row) => row._id.toString()));
+  const sessionStudentIds = new Set(quizSessionStudentsRows.map((row) => row._id.toString()));
+  const aiUserIds = new Set([...askedStudentIds, ...sessionStudentIds]);
+
+  return res.json({
+    filters: {
+      courseId,
+      from: from || null,
+      to: to || null,
+    },
+    summary: {
+      totalAiUsers: aiUserIds.size,
+      studentsAsked: askedStudentIds.size,
+      questionCount,
+      quizSessionCount,
+    },
+  });
+}
+
+async function getAiUsageTrends(req, res) {
+  const { courseId, from, to } = req.query;
+  const groupBy = req.query.groupBy === 'day' ? 'day' : 'week';
+
+  const auth = await authorizeTeacherForCourse(courseId, req.user._id);
+
+  if (auth.error) {
+    return res.status(auth.error.statusCode).json({ message: auth.error.message });
+  }
+
+  const parsedRange = parseDateRange(from, to, { defaultLast7Days: true });
+
+  if (parsedRange.error) {
+    return res.status(400).json({ message: parsedRange.error });
+  }
+
+  const qaMatch = buildQaMatch(courseId, parsedRange.range);
+  const quizSessionMatch = buildQuizSessionMatch(courseId, parsedRange.range);
+  const format = groupBy === 'day' ? '%Y-%m-%d' : '%G-W%V';
+
+  const [qaBuckets, quizSessionBuckets] = await Promise.all([
+    QaRecord.aggregate([
+      { $match: qaMatch },
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format,
+              date: '$createdAt',
+              timezone: 'UTC',
+            },
+          },
+          questionCount: { $sum: 1 },
+          askedStudents: { $addToSet: '$studentId' },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          questionCount: 1,
+          studentsAsked: { $size: '$askedStudents' },
+          askedStudentIds: '$askedStudents',
+        },
+      },
+    ]),
+    QuizSession.aggregate([
+      { $match: quizSessionMatch },
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format,
+              date: '$startedAt',
+              timezone: 'UTC',
+            },
+          },
+          quizSessionCount: { $sum: 1 },
+          quizStudents: { $addToSet: '$studentId' },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          quizSessionCount: 1,
+          quizStudentsCount: { $size: '$quizStudents' },
+          quizStudentIds: '$quizStudents',
+        },
+      },
+    ]),
+  ]);
+
+  const bucketMap = new Map();
+
+  qaBuckets.forEach((row) => {
+    bucketMap.set(row._id, {
+      period: row._id,
+      studentsAsked: row.studentsAsked,
+      questionCount: row.questionCount,
+      quizSessionCount: 0,
+      quizStudentsCount: 0,
+      totalAiUsers: row.studentsAsked,
+      askedStudentIds: row.askedStudentIds.map((id) => id.toString()),
+      quizStudentIds: [],
+    });
+  });
+
+  quizSessionBuckets.forEach((row) => {
+    const current = bucketMap.get(row._id) || {
+      period: row._id,
+      studentsAsked: 0,
+      questionCount: 0,
+      quizSessionCount: 0,
+      quizStudentsCount: 0,
+      totalAiUsers: 0,
+      askedStudentIds: [],
+      quizStudentIds: [],
+    };
+
+    current.quizSessionCount = row.quizSessionCount;
+    current.quizStudentsCount = row.quizStudentsCount;
+    current.quizStudentIds = row.quizStudentIds.map((id) => id.toString());
+    current.totalAiUsers = new Set([...current.askedStudentIds, ...current.quizStudentIds]).size;
+
+    bucketMap.set(row._id, current);
+  });
+
+  const items = Array.from(bucketMap.values())
+    .map(({ askedStudentIds, quizStudentIds, ...item }) => item)
+    .sort((a, b) => a.period.localeCompare(b.period));
+
+  return res.json({
+    filters: {
+      courseId,
+      from: from || parsedRange.range?.$gte || null,
+      to: to || parsedRange.range?.$lte || null,
+      groupBy,
+      defaultRangeApplied: parsedRange.derivedDefault,
+    },
+    items,
+  });
 }
 
 async function getDashboardOverview(req, res) {
@@ -262,6 +585,7 @@ async function getPopularQuestions(req, res) {
         _id: '$question',
         askedCount: { $sum: 1 },
         qaRecordIds: { $push: '$_id' },
+        firstAskedAt: { $min: '$createdAt' },
         latestAskedAt: { $max: '$createdAt' },
       },
     },
@@ -339,6 +663,7 @@ async function getPopularQuestions(req, res) {
         notHelpfulCount: 1,
         totalFeedback: 1,
         helpfulRate: 1,
+        firstAskedAt: 1,
         latestAskedAt: 1,
       },
     },
@@ -359,7 +684,25 @@ async function getPopularQuestions(req, res) {
       to: to || null,
       limit,
     },
-    items: rows,
+    grouping: {
+      mode: 'ORIGINAL_QUESTION',
+    },
+    course: {
+      id: auth.course._id,
+      code: auth.course.code,
+      name: auth.course.name,
+      status: auth.course.status,
+    },
+    items: rows.map((row) => ({
+      ...row,
+      courseId: auth.course._id,
+      courseCode: auth.course.code,
+      courseName: auth.course.name,
+      timeRange: {
+        firstAskedAt: row.firstAskedAt,
+        latestAskedAt: row.latestAskedAt,
+      },
+    })),
   });
 }
 
@@ -637,6 +980,7 @@ async function getAnswersNeedReview(req, res) {
       confidenceStatus: item.confidenceStatus,
       aiStatus: item.aiStatus,
       reviewStatus: item.reviewStatus,
+      reviewStatusAlias: item.reviewStatus === 'NEEDS_REVIEW' ? 'REVIEW_REQUIRED' : item.reviewStatus,
       teacherReviewNote: item.teacherReviewNote,
       reviewedBy: item.reviewedBy,
       reviewedAt: item.reviewedAt,
@@ -660,6 +1004,10 @@ async function getAnswersNeedReview(req, res) {
 }
 
 module.exports = {
+  getAiUsageSummary,
+  getAiUsageTrends,
+  getHelpfulFeedbackSummary,
+  getHelpfulFeedbackTrends,
   getDashboardOverview,
   getPopularQuestions,
   getLearningTrends,
