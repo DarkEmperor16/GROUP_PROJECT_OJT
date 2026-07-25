@@ -7,6 +7,7 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
 const User = require('../models/User');
 const Course = require('../models/Course');
 const Quiz = require('../models/Quiz');
@@ -17,21 +18,46 @@ async function seedStudentData() {
     console.log('🌱  Starting Student Data Seed Script…');
     await connectDB();
 
-    // 1. Ensure or create a sample Teacher user
-    let teacher = await User.findOne({ role: 'TEACHER' });
-    if (!teacher) {
-      console.log('👤  No TEACHER user found. Creating default seed teacher…');
-      teacher = await User.create({
-        fullName: 'Prof. Nguyen Van A',
-        email: 'teacher.seed@fpt.edu.vn',
-        passwordHash: '$2b$10$Un1qu3H4shF0rT34ch3r533dD4t4S33d', // dummy hash
+    // 1. Seed default accounts (Student, Teacher, Admin) with password '123456'
+    console.log('\n👤  Seeding default users…');
+    const defaultPasswordHash = await bcrypt.hash('123456', 10);
+
+    const defaultUsers = [
+      {
+        fullName: 'Student User',
+        email: 'student@academy.edu',
+        passwordHash: defaultPasswordHash,
+        role: 'STUDENT',
+        status: 'ACTIVE',
+      },
+      {
+        fullName: 'Teacher User',
+        email: 'teacher@academy.edu',
+        passwordHash: defaultPasswordHash,
         role: 'TEACHER',
         status: 'ACTIVE',
-      });
-      console.log(`  ✅ Teacher created: ${teacher.fullName} (${teacher.email})`);
-    } else {
-      console.log(`  ℹ️ Using existing teacher: ${teacher.fullName}`);
+      },
+      {
+        fullName: 'Admin User',
+        email: 'admin@academy.edu',
+        passwordHash: defaultPasswordHash,
+        role: 'ADMIN',
+        status: 'ACTIVE',
+      },
+    ];
+
+    for (const userData of defaultUsers) {
+      const existing = await User.findOne({ email: userData.email });
+      if (!existing) {
+        await User.create(userData);
+        console.log(`  ✅ Created User: [${userData.role}] ${userData.email}`);
+      } else {
+        console.log(`  ℹ️ User [${userData.email}] already exists`);
+      }
     }
+
+    let teacher = await User.findOne({ role: 'TEACHER' });
+
 
     // 2. Sample Courses
     const sampleCourses = [
