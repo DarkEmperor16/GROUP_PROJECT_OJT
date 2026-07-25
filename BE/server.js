@@ -4,7 +4,9 @@ const cookieParser = require('cookie-parser');
 const { authenticateToken, authorizeRoles } = require('./src/middlewares/auth.middleware');
 require('dotenv').config();
 
-const authRoutes = require('./src/routes/auth.routes');
+const authRoutes    = require('./src/routes/auth.routes');
+const studentRoutes = require('./src/routes/student.routes');
+const { errorHandler } = require('./src/middlewares/error.middleware');
 const { connectDB } = require('./src/config/db');
 
 const app = express();
@@ -19,7 +21,9 @@ app.get('/', (req, res) => {
   res.json({ message: 'Server is running successfully!' });
 });
 
-app.use('/api/auth', authRoutes);
+app.use('/api/auth',    authRoutes);
+app.use('/api/student', studentRoutes);
+
 app.get('/api/admin/test', authenticateToken, authorizeRoles('ADMIN'), (req, res) => {
   res.json({
     message: 'Admin access granted',
@@ -31,6 +35,9 @@ app.get('/api/admin/test', authenticateToken, authorizeRoles('ADMIN'), (req, res
     },
   });
 });
+
+// Centralized error handler — MUST be registered after routes
+app.use(errorHandler);
 
 async function startServer() {
   try {
