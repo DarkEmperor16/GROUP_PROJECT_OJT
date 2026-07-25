@@ -30,10 +30,11 @@ function normalizeLoginResponse(data: BackendLoginResult): LoginResponse {
 
 export const authService = {
   async login(credentials: LoginRequest): Promise<LoginResponse> {
-    const data = (await apiClient.post(
-      API_ENDPOINTS.AUTH.LOGIN,
-      credentials,
-    )) as BackendLoginResult;
+    const { email, password } = credentials;
+    const data = (await apiClient.post(API_ENDPOINTS.AUTH.LOGIN, {
+      email,
+      password,
+    })) as BackendLoginResult;
     return normalizeLoginResponse(data);
   },
 
