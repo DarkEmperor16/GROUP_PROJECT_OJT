@@ -27,6 +27,20 @@ async function connectDB() {
   console.log(`Connected to MongoDB: ${mongoose.connection.host}/${mongoose.connection.name}`);
 }
 
+async function initIndexes(models = []) {
+  const results = [];
+  for (const model of models) {
+    if (model && model.syncIndexes) {
+      await model.createCollection().catch(() => {});
+      const synced = await model.syncIndexes();
+      results.push({ modelName: model.modelName, syncedIndexes: synced });
+    }
+  }
+  return results;
+}
+
 module.exports = {
   connectDB,
+  initIndexes,
 };
+
