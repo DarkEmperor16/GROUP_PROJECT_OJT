@@ -11,6 +11,7 @@ const bcrypt = require('bcrypt');
 const User = require('../models/User');
 const Course = require('../models/Course');
 const Quiz = require('../models/Quiz');
+const Enrollment = require('../models/Enrollment');
 const { connectDB } = require('../config/db');
 
 async function seedStudentData() {
@@ -161,6 +162,31 @@ async function seedStudentData() {
       } else {
         console.log(`  ℹ️ Quiz "${existing.title}" already exists`);
       }
+    }
+
+    // 4. Enrol the seed student in all seeded courses
+    console.log('\n🎓  Seeding Enrollments…');
+    const student = await User.findOne({ email: 'student@academy.edu' });
+
+    if (student) {
+      for (const course of createdCourses) {
+        const existing = await Enrollment.findOne({
+          studentId: student._id,
+          courseId:  course._id,
+        });
+        if (!existing) {
+          await Enrollment.create({
+            studentId: student._id,
+            courseId:  course._id,
+            status:    'ACTIVE',
+          });
+          console.log(`  ✅ Enrolled student in: [${course.code}] ${course.title}`);
+        } else {
+          console.log(`  ℹ️ Already enrolled in: [${course.code}] ${course.title}`);
+        }
+      }
+    } else {
+      console.warn('  ⚠️  Seed student not found — skipping enrollment seeding.');
     }
 
     console.log('\n🎉  Seed completed successfully!');

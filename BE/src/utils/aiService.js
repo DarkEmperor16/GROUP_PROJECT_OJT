@@ -15,6 +15,7 @@ async function sendQuestionToAI({ question, courseCode, courseTitle }) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
           ...(process.env.AI_SERVICE_API_KEY && {
             Authorization: `Bearer ${process.env.AI_SERVICE_API_KEY}`,
           }),

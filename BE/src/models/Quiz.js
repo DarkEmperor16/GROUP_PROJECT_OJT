@@ -86,6 +86,9 @@ const quizSchema = new mongoose.Schema(
 quizSchema.index({ courseId: 1, status: 1 });
 quizSchema.index({ status: 1 });
 
+// Keyword search across question text (used by GET /api/student/questions)
+quizSchema.index({ 'questions.text': 'text' });
+
 // ── Instance helpers ───────────────────────────────────────────
 
 /**

@@ -7,6 +7,7 @@ const {
   submitQuiz,
   getHistory,
   askAi,
+  getQuestions,
 } = require('../controllers/student.controller');
 
 const router = express.Router();
@@ -29,6 +30,11 @@ router.get('/quizzes/:quizId', getQuizById);
 // POST /api/student/quizzes/:quizId/submit
 // Body: { "answers": [0, 2, 1, ...] }
 router.post('/quizzes/:quizId/submit', submitQuiz);
+
+// ── Questions ─────────────────────────────────────────────────
+// GET /api/student/questions?page=1&limit=10&courseId=<id>&keyword=<text>
+// Only returns questions from courses the student is enrolled in.
+router.get('/questions', getQuestions);
 
 // ── Q&A History ───────────────────────────────────────────────
 // GET /api/student/history?page=1&limit=10&courseId=<id>

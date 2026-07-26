@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Course = require('../models/Course');
 const Quiz = require('../models/Quiz');
 const QaHistory = require('../models/QaHistory');
+const Enrollment = require('../models/Enrollment');
 const { paginate } = require('../utils/paginate');
 const { sendQuestionToAI } = require('../utils/aiService');
 
@@ -280,6 +281,137 @@ async function askAi(req, res) {
   }
 }
 
+/**
+ * GET /api/student/questions
+ * Returns a paginated list of quiz questions scoped to courses the
+ * authenticated student is actively enrolled in.
+ *
+ * SECURITY: Only questions from enrolled courses are returned.
+ *           `correctAnswer` and `explanation` are NEVER included.
+ *
+ * Query params:
+ *   page     {number} default 1
+ *   limit    {number} default 10  (max 100)
+ *   courseId {string} optional — further filter to a single enrolled course
+ *   keyword  {string} optional — case-insensitive substring match on question.text
+ *
+ * Response:
+ *   {
+ *     data: [{ _id, text, options, quizId, quizTitle, courseId, courseCode, courseTitle }],
+ *     page, limit, total, totalPages
+ *   }
+ */
+async function getQuestions(req, res) {
+  try {
+    const { page = 1, limit = 10, courseId, keyword } = req.query;
+
+    // ── 1. Validate optional courseId ──────────────────────────
+    if (courseId && !mongoose.Types.ObjectId.isValid(courseId)) {
+      return res.status(400).json({ message: 'Invalid courseId' });
+    }
+
+    // ── 2. Pagination bounds ───────────────────────────────────
+    const safePage  = Math.max(1, parseInt(page, 10));
+    const safeLimit = Math.min(Math.max(1, parseInt(limit, 10)), 100);
+    const skip      = (safePage - 1) * safeLimit;
+
+    // ── 3. Resolve enrolled course IDs for this student ───────
+    //    This is the mandatory enrollment gate — students can only see
+    //    questions from courses they are actively enrolled in.
+    const enrollments = await Enrollment.find(
+      { studentId: req.user._id, status: 'ACTIVE' },
+      { courseId: 1, _id: 0 },
+    ).lean();
+
+    const enrolledCourseIds = enrollments.map((e) => e.courseId);
+
+    if (enrolledCourseIds.length === 0) {
+      // Student has no active enrollments — return an empty result immediately.
+      return res.json({ data: [], page: safePage, limit: safeLimit, total: 0, totalPages: 0 });
+    }
+
+    // ── 4. Build the aggregation pipeline ─────────────────────
+    const matchQuiz = {
+      status: 'ACTIVE',
+      courseId: { $in: enrolledCourseIds },
+    };
+
+    // If a specific courseId was requested, verify it is among the enrolled ones.
+    if (courseId) {
+      const requestedId = new mongoose.Types.ObjectId(courseId);
+      const isEnrolled  = enrolledCourseIds.some((id) => id.equals(requestedId));
+      if (!isEnrolled) {
+        return res.status(403).json({ message: 'You are not enrolled in this course' });
+      }
+      matchQuiz.courseId = requestedId;
+    }
+
+    const pipeline = [
+      // Filter to ACTIVE quizzes within enrolled (or requested) courses
+      { $match: matchQuiz },
+
+      // Join Course to get code + title for the response
+      {
+        $lookup: {
+          from:         'courses',
+          localField:   'courseId',
+          foreignField: '_id',
+          as:           'course',
+        },
+      },
+
+      // Unwind embedded questions into individual pipeline documents
+      { $unwind: '$questions' },
+    ];
+
+    // Optional keyword filter on question.text (case-insensitive)
+    if (keyword && keyword.trim()) {
+      pipeline.push({
+        $match: {
+          'questions.text': {
+            $regex:   keyword.trim(),
+            $options: 'i',
+          },
+        },
+      });
+    }
+
+    // Project safe response shape — correctAnswer and explanation are EXCLUDED
+    pipeline.push({
+      $project: {
+        _id:         '$questions._id',
+        text:        '$questions.text',
+        options:     '$questions.options',
+        quizId:      '$_id',
+        quizTitle:   '$title',
+        courseId:    1,
+        courseCode:  { $arrayElemAt: ['$course.code',  0] },
+        courseTitle: { $arrayElemAt: ['$course.title', 0] },
+      },
+    });
+
+    // Single round-trip: paginated data + total count via $facet
+    pipeline.push({
+      $facet: {
+        data:  [{ $skip: skip }, { $limit: safeLimit }],
+        total: [{ $count: 'count' }],
+      },
+    });
+
+    // ── 5. Execute ─────────────────────────────────────────────
+    const [facetResult] = await Quiz.aggregate(pipeline);
+
+    const data       = facetResult?.data  ?? [];
+    const total      = facetResult?.total?.[0]?.count ?? 0;
+    const totalPages = Math.ceil(total / safeLimit);
+
+    return res.json({ data, page: safePage, limit: safeLimit, total, totalPages });
+  } catch (error) {
+    console.error('[getQuestions]', error);
+    return res.status(500).json({ message: 'Failed to fetch questions' });
+  }
+}
+
 module.exports = {
   getCourses,
   getQuizzes,
@@ -287,4 +419,5 @@ module.exports = {
   submitQuiz,
   getHistory,
   askAi,
+  getQuestions,
 };
