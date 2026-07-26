@@ -16,6 +16,24 @@ export function PageLoader({ className }: { className?: string }) {
   );
 }
 
+/** Nhẹ hơn PageLoader — dùng Suspense fallback để cảm giác chuyển trang nhanh hơn. */
+export function PageSkeleton({ className }: { className?: string }) {
+  return (
+    <div className={cn("space-y-4 py-4", className)} aria-busy aria-label="Loading page">
+      <div className="h-8 w-48 animate-pulse rounded-lg bg-muted/70" />
+      <div className="h-4 w-full max-w-xl animate-pulse rounded bg-muted/50" />
+      <div className="grid gap-4 pt-4 md:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div
+            key={i}
+            className="h-36 animate-pulse rounded-xl border border-border/40 bg-muted/30"
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function LoadingState() {
   return <PageLoader />;
 }

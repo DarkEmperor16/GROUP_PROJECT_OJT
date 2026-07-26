@@ -5,8 +5,8 @@ Hệ thống hỗ trợ học tập AI cho Aviation Academy.
 | | |
 |---|---|
 | **Nhánh làm việc** | `dev` (auth đã merge; có thể tách `feature/duy-quang` khi cần) |
-| **Requirement** | SE-F1 — Authentication & Authorization |
-| **Owner** | **Quang** — login, session, guards, layout, API client |
+| **Requirement** | SE-F1 (Auth) + **FE platform** (router, layout, kết nối 3 actor) |
+| **Owner** | **Quang** — auth, session, guards, layout, route/nav config, API client |
 | **PR target** | `dev` (không merge thẳng `main`) |
 | **Liên hệ BE** | **Chinh** — Auth API |
 
@@ -16,13 +16,17 @@ Hệ thống hỗ trợ học tập AI cho Aviation Academy.
 
 ## Mục tiêu nhánh này
 
-Nền tảng Frontend cho đăng nhập và phân quyền. Các AE tiếp tục build feature trên scaffold này:
+**Quang** dựng khung FE (auth, router, layout, nav, prefetch).
 
-| AE | Role | Route sau login | Folder làm việc |
-|----|------|-----------------|-----------------|
-| **Vũ** | Student | `/student` (+ sub-pages) | `src/features/student/` |
-| **Long** | Teacher | `/teacher/dashboard` | `src/features/dashboard/` |
-| **Quốc Anh** | Admin | `/admin/dashboard` | `src/features/dashboard/` |
+**Cấm đụng:** `BE/**` · `features/student/**` · `features/dashboard/**` (teacher + admin).
+
+| AE | Role | Folder | Quy tắc |
+|----|------|--------|---------|
+| **Vũ** | Student | `src/features/student/` | Chỉ Vũ sửa |
+| **Long** | Teacher | `src/features/dashboard/` | Chỉ Long sửa |
+| **Quốc Anh** | Admin | `src/features/dashboard/` | Chỉ Quốc Anh sửa |
+
+**Quang** chỉ wire ở `src/features/auth/config/` (route + nav) — **không mở file** trong 3 folder actor trên.
 
 **Quy tắc sản phẩm:**
 
@@ -47,11 +51,11 @@ npm install
 npm run dev
 ```
 
-**BE (Chinh)** — chạy song song port 3000, cần MongoDB (hỏi team file `env` / Atlas):
+**BE (Chinh)** — chạy song song port 3000. FE **không** kết nối MongoDB trực tiếp; chỉ gọi API auth. DB chung do Chinh quản lý — thiếu user thì nhờ Chinh, không seed/register từ FE.
 
 ```bash
 cd BE
-cp .env.example .env   # thêm MONGODB_URI hoặc DB_USERNAME/DB_PASSWORD
+cp .env.example .env   # thêm MONGODB_URI từ team (local only, không commit)
 npm install
 npm run dev
 ```
@@ -67,13 +71,15 @@ npm run lint    # ESLint
 npm run preview # preview build
 ```
 
-**Tài khoản test (MongoDB team):**
+**Tài khoản test (MongoDB team — Atlas chung):**
 
-| Role | Email | Password |
-|------|-------|----------|
-| STUDENT | `student@academy.edu` | `123456` |
-| TEACHER | `teacher@academy.edu` | `123456` |
-| ADMIN | `admin@academy.edu` | `123456` |
+| Role | Email | Password | Ghi chú |
+|------|-------|----------|---------|
+| STUDENT | `student@academy.edu` | `123456` | Account seed team |
+| STUDENT | `quang27110910@gmail.com` | `123456` | Account cá nhân |
+| TEACHER | `quangdnis@gmail.com` | `123456` | Teacher trên DB chung |
+| TEACHER | `teacher@academy.edu` | — | Chưa có trên DB — nhờ Chinh seed |
+| ADMIN | `admin@academy.edu` | — | Chưa có trên DB — nhờ Chinh seed |
 
 Đăng nhập FE: chọn **đúng role** khớp `user.role` từ BE.
 
@@ -93,10 +99,17 @@ npm run preview # preview build
 - [x] shadcn/ui login + home
 - [x] Role picker (3 roles: Student / Teacher / Admin)
 - [x] Cấu trúc thư mục theo [main-course-project](https://github.com/kat-minh/main-course-project)
-- [x] Login end-to-end với BE (MongoDB + JWT)
+- [x] Login end-to-end với BE (MongoDB chung + JWT)
 - [x] Refresh token — `POST /api/auth/refresh-token`
-- [x] Student sub-pages (Vũ) — Ask AI, Quiz, History trên `dev`
-- [ ] Teacher / Admin dashboard — Long, Quốc Anh
+- [x] Session reload — `AuthBootstrap` + `GET /api/auth/me`
+- [x] Home UX khi đã login (ẩn Sign in, link feature cards)
+- [x] Form validation nâng cao — `utils/rules.ts`, RHF `onTouched`
+- [x] Dynamic routing theo role — `features/auth/config/roleRoutes.ts`
+- [x] Lazy loading — `lib/lazyRoute.ts`, login/home lazy chunks
+- [x] Security scaffold — `auth/security/` (2FA UI, audit table, login alerts) — `bf5d27d`
+- [x] Role nav + perf — `roleNav.ts`, eager prefetch, `RoutePendingBar`, `PageSkeleton` — `a86b4af`
+- [x] Student sub-pages (Vũ) — wired in `roleRoutes.ts`, không sửa `student/`
+- [ ] Teacher / Admin dashboard content — Long, Quốc Anh (`features/dashboard/`)
 
 ---
 
@@ -154,7 +167,8 @@ sequenceDiagram
 3. Tokens + user → Zustand persist key `ojt-kns-auth` (localStorage)
 4. `apiClient` gắn `Authorization: Bearer` + `withCredentials` (refresh cookie)
 5. 401 (trừ `/login`, `/logout`, `/refresh-token`) → refresh → fail → redirect `/login`
-6. Logout → clear store + React Query cache
+6. Reload app → `AuthBootstrap` gọi `/auth/me` → cập nhật user hoặc clear session
+7. Logout → clear store + React Query cache
 
 ---
 
@@ -190,7 +204,8 @@ src/
 │   ├── router.tsx
 │   └── providers/
 ├── features/               # Business modules
-│   ├── auth/               # Quang — types, schema, store, services, hooks, components, pages
+│   ├── auth/               # Quang — login, session, security scaffold
+│   │   └── config/         # roleRoutes.ts, roleNav.ts, buildProtectedRoutes
 │   ├── landing/            # HomePage
 │   ├── student/            # Vũ — student pages
 │   └── dashboard/          # placeholder — Long, Quốc Anh
@@ -201,7 +216,8 @@ src/
 │   ├── layouts/            # MainLayout
 │   ├── constants/          # API_ENDPOINTS, QUERY_KEYS
 │   └── types/
-├── lib/                    # axios, queryClient, utils
+├── lib/                    # axios, queryClient, lazyRoute, utils
+├── utils/                  # rules.ts — Zod validation rules dùng chung
 └── styles/                 # globals.css
 ```
 
@@ -212,8 +228,13 @@ src/
 | `types.ts` | `UserRole`, `LoginRequest`, `ROLE_HOME_PATH` |
 | `schema.ts` | Zod `loginSchema` |
 | `store.ts` | Zustand persist `ojt-kns-auth` |
-| `services.ts` | `authService.login` / `logout` — normalize response BE |
+| `services.ts` | `authService.login` / `logout` / `getMe` — normalize response BE |
 | `utils/tokenResponse.ts` | `extractTokenPair` — `accessToken` / legacy `token` |
+| `components/AuthBootstrap.tsx` | Gọi `/auth/me` khi reload (non-blocking) |
+| `config/roleRoutes.ts` | Đăng ký route lazy theo role |
+| `config/roleNav.ts` | Menu header theo role |
+| `utils/prefetchRoutes.ts` | Prefetch chunk (eager sau login) |
+| `security/` | Audit log + 2FA scaffold (chờ BE) |
 | `hooks/useAuth.ts` | `useLoginMutation`, `useLogoutMutation` |
 | `components/LoginForm.tsx` | Form + role picker |
 | `components/RoleSelector.tsx` | Chọn Student / Teacher / Admin |
@@ -278,43 +299,51 @@ FE ưu tiên `accessToken`; chấp nhận legacy field `token` và wrapper `resu
 
 ### `POST /api/auth/refresh-token` — body `{ refreshToken }` hoặc httpOnly cookie
 
-### `GET /api/auth/me` — Bearer required (chưa dùng trên FE)
+### `GET /api/auth/me` — Bearer required
+
+FE gọi khi reload app (`AuthBootstrap`) để xác thực session còn hợp lệ.
 
 ---
 
-## Thêm feature mới
+## Thêm route / page mới (phối hợp team)
 
-1. Page: `src/features/<module>/pages/YourPage.tsx`
-2. Service: `src/features/<module>/services.ts` — normalize response BE tại đây
-3. Hook (nếu cần): `src/features/<module>/hooks/useXxx.ts`
-4. Barrel export: `src/features/<module>/index.ts`
-5. Route: `src/app/router.tsx` + bọc `RoleGuard` đúng role
-6. Nav (nếu cần): `src/shared/layouts/MainLayout.tsx`
+**Owner page** (Vũ / Long / Quốc Anh):
 
-**Lưu ý:** Không duplicate server data vào Zustand — dùng React Query cho API data.
+1. Tạo page trong `features/student/` hoặc `features/dashboard/`
+2. Export từ `index.ts` của feature đó
+
+**Quang** (chỉ wire — không sửa file trong folder actor):
+
+1. Thêm entry trong `features/auth/config/roleRoutes.ts`
+2. Thêm menu (nếu cần) trong `features/auth/config/roleNav.ts`
+3. Commit + push scope Quang
+
+**Lưu ý:** API data dùng React Query — không duplicate vào Zustand.
 
 ---
 
-## Git
+## Git (Quang)
+
+- Nhánh: `dev`
+- **Làm tới đâu → commit + push tới đó**
+- Commit: `git commit-tree` — không `Co-authored-by: Cursor`
+- Trước push: `git diff --cached --name-only` — không có `BE/`, `student/`, `dashboard/`, `LOCAL-QUANG/`, `env.txt`
+
+**Được push:** `features/auth/**`, `app/`, `landing/`, `shared/`, `lib/axios.ts`, `FE/README.md`
 
 ```bash
 git checkout dev
 git pull origin dev
-
-# Feature mới
-git checkout -b feature/your-feature
-# ... code ...
-git push origin feature/your-feature
-# Mở PR merge vào dev
+# ... code scope Quang ...
+git push origin dev
 ```
 
-**Commit format:** `[SE-Fx.x] feat|fix|refactor: mô tả` hoặc `fix(fe-auth): ...`
+**Commit gần nhất (auth/platform):**
 
-**Auth trên `dev` (Quang):**
-
-- `[SE-F1.1] feat: implement login form and auth guards`
-- `[SE-F1.1] refactor: align FE structure with main-course-project pattern`
-- `fix(fe-auth): align token handling and refresh flow with BE API`
+- `a86b4af` — roleNav, eager prefetch, nav perf
+- `bf5d27d` — security scaffold
+- `9ebfbf3` — session perf + prefetch
+- `4b6d6d5` — validation + dynamic routing + lazy loading
 
 ---
 

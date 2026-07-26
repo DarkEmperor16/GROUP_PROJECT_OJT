@@ -1,11 +1,14 @@
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { LogOut, Plane } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
-import { PageLoader } from "@/shared/components/common/StatusStates";
+import { PageSkeleton } from "@/shared/components/common/StatusStates";
 import RouteErrorBoundary from "@/shared/components/common/RouteErrorBoundary";
+import RoutePendingBar from "@/shared/components/common/RoutePendingBar";
+import { ROLE_NAV_ITEMS } from "@/features/auth/config/roleNav";
 import { useAuthStore } from "@/features/auth/store";
 import { useLogoutMutation } from "@/features/auth/hooks/useAuth";
+import { prefetchRoleRoutes, prefetchHomePage } from "@/features/auth/utils/prefetchRoutes";
 import { cn } from "@/lib/utils";
 
 export default function MainLayout() {
@@ -13,21 +16,33 @@ export default function MainLayout() {
   const accessToken = useAuthStore((state) => state.accessToken);
   const logoutMutation = useLogoutMutation();
 
+  useEffect(() => {
+    if (user?.role) {
+      prefetchRoleRoutes(user.role, { eager: true });
+    }
+  }, [user?.role]);
+
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
-      "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+      "rounded-lg px-3 py-2 text-sm font-medium transition-[color,background-color] duration-100 touch-manipulation",
       isActive
         ? "bg-primary/10 text-primary"
         : "text-muted-foreground hover:bg-accent hover:text-foreground",
     );
 
+  const roleNav =
+    accessToken && user?.role ? ROLE_NAV_ITEMS[user.role] : [];
+
   return (
     <div className="login-mesh flex min-h-dvh flex-col">
-      <header className="sticky top-0 z-50 border-b border-border/60 bg-background/85 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
+      <header className="sticky top-0 z-50 border-b border-border/60 bg-background/95">
+        <div className="relative mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
+          <RoutePendingBar />
+
           <Link
             to="/"
-            className="flex items-center gap-2 text-lg font-semibold text-foreground transition-colors hover:text-primary"
+            className="flex items-center gap-2 text-lg font-semibold text-foreground transition-colors duration-100 hover:text-primary touch-manipulation"
+            onMouseEnter={() => prefetchHomePage()}
           >
             <Plane className="h-5 w-5 text-primary" aria-hidden />
             Aviation Academy AI
@@ -38,23 +53,19 @@ export default function MainLayout() {
               Home
             </NavLink>
 
-            {accessToken && user?.role === "STUDENT" && (
-              <NavLink to="/student" className={navLinkClass}>
-                Learning
+            {roleNav.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                end={item.end}
+                className={navLinkClass}
+                onMouseEnter={() => {
+                  if (user?.role) prefetchRoleRoutes(user.role, { eager: true });
+                }}
+              >
+                {item.label}
               </NavLink>
-            )}
-
-            {accessToken && user?.role === "TEACHER" && (
-              <NavLink to="/teacher/dashboard" className={navLinkClass}>
-                Dashboard
-              </NavLink>
-            )}
-
-            {accessToken && user?.role === "ADMIN" && (
-              <NavLink to="/admin/dashboard" className={navLinkClass}>
-                Admin
-              </NavLink>
-            )}
+            ))}
 
             {accessToken ? (
               <div className="ml-2 flex items-center gap-3 border-l border-border/60 pl-3">
@@ -91,7 +102,7 @@ export default function MainLayout() {
 
       <main className="mx-auto w-full max-w-6xl flex-1 p-4 md:p-6">
         <RouteErrorBoundary>
-          <Suspense fallback={<PageLoader />}>
+          <Suspense fallback={<PageSkeleton />}>
             <Outlet />
           </Suspense>
         </RouteErrorBoundary>

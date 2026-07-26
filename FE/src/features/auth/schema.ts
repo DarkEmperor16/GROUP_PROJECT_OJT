@@ -1,16 +1,11 @@
 import { z } from "zod";
+import { emailRule, passwordRule, userRoleRule } from "@/utils/rules";
 
-export const userRoleSchema = z.enum(["STUDENT", "TEACHER", "ADMIN"]);
+export const userRoleSchema = userRoleRule;
 
 export const loginSchema = z.object({
-  email: z
-    .string()
-    .min(1, { message: "Email is required" })
-    .email({ message: "Invalid email address" }),
-  password: z
-    .string()
-    .min(1, { message: "Password is required" })
-    .min(6, { message: "Password must be at least 6 characters" }),
+  email: emailRule,
+  password: passwordRule,
   role: userRoleSchema,
 });
 
