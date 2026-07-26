@@ -23,7 +23,6 @@ import {
   FormMessage,
 } from "@/shared/components/ui/form";
 import { Input } from "@/shared/components/ui/input";
-import RoleSelector from "@/features/auth/components/RoleSelector";
 import { useLoginMutation } from "@/features/auth/hooks/useAuth";
 import { loginSchema, type LoginSchemaType } from "@/features/auth/schema";
 import {
@@ -167,7 +166,6 @@ export default function LoginForm() {
     defaultValues: {
       email: "",
       password: "",
-      role: "STUDENT",
     },
   });
 
@@ -247,26 +245,6 @@ export default function LoginForm() {
                 onSubmit={form.handleSubmit(handleLogin)}
                 className="space-y-5"
               >
-                <FormField
-                  control={form.control}
-                  name="role"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-foreground/90">
-                        Sign in as
-                      </FormLabel>
-                      <FormControl>
-                        <RoleSelector
-                          value={field.value}
-                          onChange={field.onChange}
-                          disabled={loginMutation.isPending}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
                 <FormField
                   control={form.control}
                   name="email"

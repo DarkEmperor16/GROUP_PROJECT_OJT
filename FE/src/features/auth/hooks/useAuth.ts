@@ -19,15 +19,7 @@ export const useLoginMutation = () => {
 
   return useMutation({
     mutationFn: (credentials: LoginRequest) => authService.login(credentials),
-    onSuccess: (data, credentials) => {
-      if (data.user.role !== credentials.role) {
-        toast.error("Role mismatch", {
-          description:
-            "The selected role does not match your account. Please try again.",
-        });
-        return;
-      }
-
+    onSuccess: (data) => {
       setAuth(data.accessToken, data.refreshToken, data.user);
       prefetchRoleRoutes(data.user.role, { eager: true });
       toast.success("Login successful", {
