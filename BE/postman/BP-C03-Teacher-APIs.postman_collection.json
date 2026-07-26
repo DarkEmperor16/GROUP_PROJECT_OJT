@@ -1,0 +1,253 @@
+{
+  "info": {
+    "name": "OJT-KNS-SU26 BE - BP-C03 Teacher APIs",
+    "_postman_id": "4bb8eb7d-1f36-4f11-bf2f-a5e1df40b607",
+    "description": "Collection de test cac API Auth + BP-C03 (Teacher Knowledge Base) + Internal AI callback.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "teacherEmail", "value": "teacher@academy.edu" },
+    { "key": "teacherPassword", "value": "123456" },
+    { "key": "accessToken", "value": "" },
+    { "key": "courseId", "value": "" },
+    { "key": "documentId", "value": "" },
+    { "key": "internalApiToken", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Auth",
+      "item": [
+        {
+          "name": "Login Teacher",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{teacherEmail}}\",\n  \"password\": \"{{teacherPassword}}\"\n}",
+              "options": {
+                "raw": { "language": "json" }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Dang nhap teacher va luu accessToken vao collection variable"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "if (data && data.accessToken) {",
+                  "    pm.collectionVariables.set('accessToken', data.accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Get Current User (/me)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "me"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. BP-C03 Teacher Knowledge",
+      "item": [
+        {
+          "name": "Upload Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "title",
+                  "value": "Aircraft Safety Manual",
+                  "type": "text"
+                },
+                {
+                  "key": "version",
+                  "value": "v1.0",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Tai lieu an toan bay co ban",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/courses/{{courseId}}/documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "courses", "{{courseId}}", "documents"]
+            },
+            "description": "Nho chon file tai field 'file' truoc khi Send"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data && data.document && data.document.id) {",
+                  "    pm.collectionVariables.set('documentId', data.document.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "List Documents By Course",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/courses/{{courseId}}/documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "courses", "{{courseId}}", "documents"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Documents By Course (status=processing)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/courses/{{courseId}}/documents?status=processing",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "courses", "{{courseId}}", "documents"],
+              "query": [
+                { "key": "status", "value": "processing" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Document Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/documents/{{documentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "documents", "{{documentId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reindex Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/documents/{{documentId}}/reindex",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "documents", "{{documentId}}", "reindex"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Internal AI Callback",
+      "item": [
+        {
+          "name": "Update Status -> active",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-internal-token", "value": "{{internalApiToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"active\"\n}",
+              "options": {
+                "raw": { "language": "json" }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/internal/ai/documents/{{documentId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "internal", "ai", "documents", "{{documentId}}", "status"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Status -> failed",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-internal-token", "value": "{{internalApiToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"failed\",\n  \"errorMessage\": \"Embedding generation failed\"\n}",
+              "options": {
+                "raw": { "language": "json" }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/internal/ai/documents/{{documentId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "internal", "ai", "documents", "{{documentId}}", "status"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
