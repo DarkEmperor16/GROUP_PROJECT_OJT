@@ -32,7 +32,7 @@ Hệ thống hỗ trợ học tập AI cho Aviation Academy.
 
 - Không có **Register** public — tài khoản do Admin cấp
 - Login full-page tại `/login` (tách khỏi `MainLayout`)
-- Login: chọn role (Student / Teacher / Admin) + email + password
+- Login: email + password (role lấy từ BE sau khi đăng nhập)
 - Logo máy bay trên login → click về Home (`/`)
 - UI: shadcn/ui + theme aviation
 
@@ -81,7 +81,7 @@ npm run preview # preview build
 | TEACHER | `teacher@academy.edu` | — | Chưa có trên DB — nhờ Chinh seed |
 | ADMIN | `admin@academy.edu` | — | Chưa có trên DB — nhờ Chinh seed |
 
-Đăng nhập FE: chọn **đúng role** khớp `user.role` từ BE.
+Đăng nhập FE: nhập email + password — BE trả `user.role`, FE redirect theo role.
 
 ---
 
@@ -150,12 +150,11 @@ sequenceDiagram
     participant Zustand as auth.store
     participant Router
 
-    User->>LoginForm: Chọn role + email + password
+    User->>LoginForm: Email + password
     LoginForm->>useLoginMutation: submit (RHF + Zod)
     useLoginMutation->>authService: POST /auth/login
-    authService->>BE: { email, password } (+ role FE validate client)
+    authService->>BE: { email, password }
     BE-->>authService: { accessToken, refreshToken, user }
-    useLoginMutation->>useLoginMutation: role FE === user.role?
     useLoginMutation->>Zustand: setAuth(tokens, user)
     useLoginMutation->>Router: navigate theo role
 ```
@@ -163,7 +162,7 @@ sequenceDiagram
 **Auth flow tóm tắt:**
 
 1. `LoginForm` → `useLoginMutation` → `authService.login`
-2. Validate role FE chọn khớp `user.role` từ BE (không khớp → toast lỗi)
+2. BE trả `user.role` → redirect theo role (Student / Teacher / Admin)
 3. Tokens + user → Zustand persist key `ojt-kns-auth` (localStorage)
 4. `apiClient` gắn `Authorization: Bearer` + `withCredentials` (refresh cookie)
 5. 401 (trừ `/login`, `/logout`, `/refresh-token`) → refresh → fail → redirect `/login`
@@ -236,8 +235,7 @@ src/
 | `utils/prefetchRoutes.ts` | Prefetch chunk (eager sau login) |
 | `security/` | Audit log + 2FA scaffold (chờ BE) |
 | `hooks/useAuth.ts` | `useLoginMutation`, `useLogoutMutation` |
-| `components/LoginForm.tsx` | Form + role picker |
-| `components/RoleSelector.tsx` | Chọn Student / Teacher / Admin |
+| `components/LoginForm.tsx` | Form đăng nhập (email + password) |
 | `pages/LoginPage.tsx` | Wrapper trang login |
 
 ---
