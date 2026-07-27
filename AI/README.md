@@ -38,14 +38,12 @@ pip install -r requirements.txt
 ```
 
 ### 2. Cấu hình biến môi trường
-Tạo file `.env` trong thư mục `backend`:
-```bash
-cp .env.example backend/.env
-```
-Mở `backend/.env` và cấu hình API key:
+AI Backend đã được nâng cấp để dùng chung biến môi trường với Node.js Backend.
+Bạn chỉ cần cấu hình chung vào một file `.env` nằm trong thư mục `BE` (copy từ `BE/.env.example`).
+Bên trong file `BE/.env` đó, cấu hình các biến cho AI như sau:
 ```env
-GOOGLE_API_KEY=your_api_key_here
-GOOGLE_LLM_MODEL=pickone
+GOOGLE_API_KEYS=your_api_key_here
+GOOGLE_LLM_MODEL=gemma-4-31b-it
 ```
 
 ### 3. Chạy Backend
@@ -55,16 +53,7 @@ python -m uvicorn main:app --reload --port 8000
 ```
 API Docs (Swagger UI) sẽ có tại: `http://127.0.0.1:8000/docs`
 
-### 4. Truy cập giao diện (Frontend)
-Bạn có thể mở giao diện bằng 1 trong các cách sau:
-- **Cách nhanh nhất:** Truy cập `http://127.0.0.1:8000/frontend/` (backend đã tích hợp sẵn để serve thư mục frontend).
-- Mở file `frontend/index.html` trực tiếp trên trình duyệt.
-- Dùng extension Live Server trên VS Code.
-- Chạy http server độc lập:
-  ```bash
-  cd frontend
-  python -m http.server 8080
-  ```
+
 
 ---
 
