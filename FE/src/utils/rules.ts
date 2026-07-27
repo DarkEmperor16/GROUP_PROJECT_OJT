@@ -16,8 +16,3 @@ export const passwordRule = z
   .refine((value) => !/\s/.test(value), {
     message: "Password cannot contain spaces",
   });
-
-export const userRoleRule = z.enum(["STUDENT", "TEACHER", "ADMIN"], {
-  required_error: "Please select a role",
-  invalid_type_error: "Please select a role",
-});
