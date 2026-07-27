@@ -1,26 +1,276 @@
 {
   "info": {
-    "name": "OJT-KNS-SU26 BE - BP-C04 Teacher Feedback",
+    "name": "OJT-KNS-SU26 BE - Teacher APIs",
     "_postman_id": "c2a3e6c5-a509-46aa-8ec7-6177c1ff0f2e",
-    "description": "Collection chi danh cho BP-C04 (Teacher): summary dashboard, low-rated answers, update review status.",
+    "description": "Collection chi danh cho cac API Teacher (/api/teacher). Khong bao gom student, admin, auth login, hoac internal callback.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:3000" },
     { "key": "accessToken", "value": "" },
     { "key": "courseId", "value": "" },
+    { "key": "documentId", "value": "" },
     { "key": "answerId", "value": "" },
+    { "key": "qaRecordId", "value": "" },
+    { "key": "questionId", "value": "" },
     { "key": "from", "value": "2026-01-01T00:00:00.000Z" },
     { "key": "to", "value": "2026-12-31T23:59:59.999Z" },
     { "key": "page", "value": "1" },
-    { "key": "limit", "value": "10" }
+    { "key": "limit", "value": "10" },
+    { "key": "groupBy", "value": "week" },
+    { "key": "keyword", "value": "" },
+    { "key": "sortBy", "value": "createdAt" },
+    { "key": "sortOrder", "value": "desc" },
+    { "key": "reviewStatus", "value": "NEEDS_REVIEW" },
+    { "key": "questionType", "value": "MULTIPLE_CHOICE" },
+    { "key": "courseStatus", "value": "ACTIVE" }
   ],
   "item": [
     {
-      "name": "BP-C04 Teacher APIs",
+      "name": "1. Teacher Courses",
       "item": [
         {
-          "name": "3) Feedback Summary (Dashboard)",
+          "name": "List My Courses",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/courses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "courses"]
+            },
+            "description": "Lay danh sach course duoc gan cho teacher hien tai."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "if (data.courses && data.courses.length > 0 && data.courses[0].id) {",
+                  "  pm.collectionVariables.set('courseId', data.courses[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "List My Courses By Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/courses?status={{courseStatus}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "courses"],
+              "query": [
+                { "key": "status", "value": "{{courseStatus}}" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Course Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/courses/{{courseId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "courses", "{{courseId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Teacher Knowledge",
+      "item": [
+        {
+          "name": "Upload Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "title",
+                  "value": "Aircraft Safety Manual",
+                  "type": "text"
+                },
+                {
+                  "key": "version",
+                  "value": "v1.0",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Tai lieu an toan bay co ban",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/courses/{{courseId}}/documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "courses", "{{courseId}}", "documents"]
+            },
+            "description": "Nho chon file tai field 'file' truoc khi Send."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data && data.document && data.document.id) {",
+                  "  pm.collectionVariables.set('documentId', data.document.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "List Documents By Course",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/courses/{{courseId}}/documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "courses", "{{courseId}}", "documents"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Documents By Course With Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/courses/{{courseId}}/documents?status=processing",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "courses", "{{courseId}}", "documents"],
+              "query": [
+                { "key": "status", "value": "processing" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Document Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/documents/{{documentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "documents", "{{documentId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reindex Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/documents/{{documentId}}/reindex",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "documents", "{{documentId}}", "reindex"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Document Status Active",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"active\"\n}",
+              "options": {
+                "raw": { "language": "json" }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/documents/{{documentId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "documents", "{{documentId}}", "status"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Document Status Inactive",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"inactive\"\n}",
+              "options": {
+                "raw": { "language": "json" }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/documents/{{documentId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "documents", "{{documentId}}", "status"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Teacher Feedback",
+      "item": [
+        {
+          "name": "Feedback Summary",
           "request": {
             "method": "GET",
             "header": [
@@ -35,7 +285,7 @@
                 { "key": "to", "value": "{{to}}" }
               ]
             },
-            "description": "Lay thong ke helpful/not-helpful va helpful rate cho dashboard teacher."
+            "description": "Lay thong ke helpful/not-helpful va helpful rate cho teacher."
           },
           "event": [
             {
@@ -53,7 +303,7 @@
           "response": []
         },
         {
-          "name": "4) Low-Rated Answers List",
+          "name": "Low-Rated Answers List",
           "request": {
             "method": "GET",
             "header": [
@@ -82,8 +332,10 @@
                   "  pm.response.to.have.status(200);",
                   "});",
                   "const data = pm.response.json();",
-                  "if (data.items && data.items.length > 0 && data.items[0].answerId) {",
-                  "  pm.collectionVariables.set('answerId', data.items[0].answerId);",
+                  "if (data.items && data.items.length > 0) {",
+                  "  const item = data.items[0];",
+                  "  if (item.answerId) { pm.collectionVariables.set('answerId', item.answerId); }",
+                  "  if (item.id) { pm.collectionVariables.set('qaRecordId', item.id); }",
                   "}"
                 ]
               }
@@ -92,7 +344,7 @@
           "response": []
         },
         {
-          "name": "5) Mark Answer Review Status",
+          "name": "Mark Answer Review Status - Needs Review",
           "request": {
             "method": "PATCH",
             "header": [
@@ -113,23 +365,10 @@
             },
             "description": "Teacher cap nhat trang thai review: NEEDS_REVIEW | IN_PROGRESS | RESOLVED."
           },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () {",
-                  "  pm.response.to.have.status(200);",
-                  "});"
-                ]
-              }
-            }
-          ],
           "response": []
         },
         {
-          "name": "5) Mark Answer Review Status - In Progress",
+          "name": "Mark Answer Review Status - In Progress",
           "request": {
             "method": "PATCH",
             "header": [
@@ -152,7 +391,7 @@
           "response": []
         },
         {
-          "name": "5) Mark Answer Review Status - Resolved",
+          "name": "Mark Answer Review Status - Resolved",
           "request": {
             "method": "PATCH",
             "header": [
@@ -170,6 +409,363 @@
               "raw": "{{baseUrl}}/api/teacher/answers/{{answerId}}/review-status",
               "host": ["{{baseUrl}}"],
               "path": ["api", "teacher", "answers", "{{answerId}}", "review-status"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Teacher History",
+      "item": [
+        {
+          "name": "Get History List",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/history/qa?courseId={{courseId}}&keyword={{keyword}}&reviewStatus={{reviewStatus}}&from={{from}}&to={{to}}&page={{page}}&limit={{limit}}&sortBy={{sortBy}}&sortOrder={{sortOrder}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "history", "qa"],
+              "query": [
+                { "key": "courseId", "value": "{{courseId}}" },
+                { "key": "keyword", "value": "{{keyword}}" },
+                { "key": "reviewStatus", "value": "{{reviewStatus}}" },
+                { "key": "from", "value": "{{from}}" },
+                { "key": "to", "value": "{{to}}" },
+                { "key": "page", "value": "{{page}}" },
+                { "key": "limit", "value": "{{limit}}" },
+                { "key": "sortBy", "value": "{{sortBy}}" },
+                { "key": "sortOrder", "value": "{{sortOrder}}" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.items && data.items.length > 0 && data.items[0].id) {",
+                  "  pm.collectionVariables.set('qaRecordId', data.items[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Get Popular History Questions",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/history/qa/popular?courseId={{courseId}}&keyword={{keyword}}&from={{from}}&to={{to}}&limit={{limit}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "history", "qa", "popular"],
+              "query": [
+                { "key": "courseId", "value": "{{courseId}}" },
+                { "key": "keyword", "value": "{{keyword}}" },
+                { "key": "from", "value": "{{from}}" },
+                { "key": "to", "value": "{{to}}" },
+                { "key": "limit", "value": "{{limit}}" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get History Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/history/qa/{{qaRecordId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "history", "qa", "{{qaRecordId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5. Teacher Dashboard",
+      "item": [
+        {
+          "name": "Get Dashboard Overview",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/dashboard/overview?courseId={{courseId}}&from={{from}}&to={{to}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "dashboard", "overview"],
+              "query": [
+                { "key": "courseId", "value": "{{courseId}}" },
+                { "key": "from", "value": "{{from}}" },
+                { "key": "to", "value": "{{to}}" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get AI Usage Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/dashboard/ai-usage-summary?courseId={{courseId}}&from={{from}}&to={{to}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "dashboard", "ai-usage-summary"],
+              "query": [
+                { "key": "courseId", "value": "{{courseId}}" },
+                { "key": "from", "value": "{{from}}" },
+                { "key": "to", "value": "{{to}}" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get AI Usage Trends",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/dashboard/ai-usage-trends?courseId={{courseId}}&from={{from}}&to={{to}}&groupBy={{groupBy}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "dashboard", "ai-usage-trends"],
+              "query": [
+                { "key": "courseId", "value": "{{courseId}}" },
+                { "key": "from", "value": "{{from}}" },
+                { "key": "to", "value": "{{to}}" },
+                { "key": "groupBy", "value": "{{groupBy}}" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Helpful Feedback Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/dashboard/helpful-feedback-summary?courseId={{courseId}}&from={{from}}&to={{to}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "dashboard", "helpful-feedback-summary"],
+              "query": [
+                { "key": "courseId", "value": "{{courseId}}" },
+                { "key": "from", "value": "{{from}}" },
+                { "key": "to", "value": "{{to}}" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Helpful Feedback Trends",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/dashboard/helpful-feedback-trends?courseId={{courseId}}&from={{from}}&to={{to}}&groupBy={{groupBy}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "dashboard", "helpful-feedback-trends"],
+              "query": [
+                { "key": "courseId", "value": "{{courseId}}" },
+                { "key": "from", "value": "{{from}}" },
+                { "key": "to", "value": "{{to}}" },
+                { "key": "groupBy", "value": "{{groupBy}}" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Dashboard Popular Questions",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/dashboard/popular-questions?courseId={{courseId}}&keyword={{keyword}}&from={{from}}&to={{to}}&limit={{limit}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "dashboard", "popular-questions"],
+              "query": [
+                { "key": "courseId", "value": "{{courseId}}" },
+                { "key": "keyword", "value": "{{keyword}}" },
+                { "key": "from", "value": "{{from}}" },
+                { "key": "to", "value": "{{to}}" },
+                { "key": "limit", "value": "{{limit}}" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Learning Trends",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/dashboard/learning-trends?courseId={{courseId}}&from={{from}}&to={{to}}&groupBy={{groupBy}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "dashboard", "learning-trends"],
+              "query": [
+                { "key": "courseId", "value": "{{courseId}}" },
+                { "key": "from", "value": "{{from}}" },
+                { "key": "to", "value": "{{to}}" },
+                { "key": "groupBy", "value": "{{groupBy}}" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Answers Need Review",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/dashboard/answers-need-review?courseId={{courseId}}&from={{from}}&to={{to}}&page={{page}}&limit={{limit}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "dashboard", "answers-need-review"],
+              "query": [
+                { "key": "courseId", "value": "{{courseId}}" },
+                { "key": "from", "value": "{{from}}" },
+                { "key": "to", "value": "{{to}}" },
+                { "key": "page", "value": "{{page}}" },
+                { "key": "limit", "value": "{{limit}}" }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "6. Teacher Quiz Questions",
+      "item": [
+        {
+          "name": "List Quiz Questions",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/quiz-questions?courseId={{courseId}}&reviewStatus={{reviewStatus}}&questionType={{questionType}}&keyword={{keyword}}&page={{page}}&limit={{limit}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "quiz-questions"],
+              "query": [
+                { "key": "courseId", "value": "{{courseId}}" },
+                { "key": "reviewStatus", "value": "{{reviewStatus}}" },
+                { "key": "questionType", "value": "{{questionType}}" },
+                { "key": "keyword", "value": "{{keyword}}" },
+                { "key": "page", "value": "{{page}}" },
+                { "key": "limit", "value": "{{limit}}" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.items && data.items.length > 0 && data.items[0].id) {",
+                  "  pm.collectionVariables.set('questionId', data.items[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Get Quiz Question Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/quiz-questions/{{questionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "quiz-questions", "{{questionId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Review Quiz Question - Good",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reviewStatus\": \"GOOD\",\n  \"teacherReviewNote\": \"Question looks correct and can be used\"\n}",
+              "options": {
+                "raw": { "language": "json" }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/quiz-questions/{{questionId}}/review",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "quiz-questions", "{{questionId}}", "review"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Review Quiz Question - Needs Review",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reviewStatus\": \"NEEDS_REVIEW\",\n  \"teacherReviewNote\": \"Please adjust explanation and answer choices\"\n}",
+              "options": {
+                "raw": { "language": "json" }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/quiz-questions/{{questionId}}/review",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teacher", "quiz-questions", "{{questionId}}", "review"]
             }
           },
           "response": []

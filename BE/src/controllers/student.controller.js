@@ -3,6 +3,7 @@ const Course = require('../models/Course');
 const Quiz = require('../models/Quiz');
 const QaHistory = require('../models/QaHistory');
 const Enrollment = require('../models/Enrollment');
+const QuizSession = require('../models/QuizSession');
 const { paginate } = require('../utils/paginate');
 const { sendQuestionToAI } = require('../utils/aiService');
 
@@ -180,11 +181,26 @@ async function submitQuiz(req, res) {
       };
     });
 
+    const totalQuestions = quiz.questions.length;
+    const percentage = Math.round((score / totalQuestions) * 100);
+
+    await QuizSession.create({
+      quizId: quiz._id,
+      courseId: quiz.courseId,
+      studentId: req.user._id,
+      status: 'COMPLETED',
+      score,
+      totalQuestions,
+      percentage,
+      startedAt: new Date(),
+      completedAt: new Date(),
+    });
+
     return res.json({
       quizId,
       score,
-      total:      quiz.questions.length,
-      percentage: Math.round((score / quiz.questions.length) * 100),
+      total:      totalQuestions,
+      percentage,
       results,
     });
   } catch (error) {

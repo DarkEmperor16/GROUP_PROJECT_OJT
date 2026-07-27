@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 const mongoose = require('mongoose');
 const Course = require('../models/Course');
 const CourseDocument = require('../models/CourseDocument');
@@ -55,6 +56,12 @@ async function findCourseAndAuthorizeTeacher(courseId, userId) {
 async function uploadDocument(req, res) {
   const { courseId } = req.params;
   const { title, version, description = '' } = req.body;
+  const uploadedFile =
+    req.file ||
+    req.files?.file?.[0] ||
+    req.files?.document?.[0] ||
+    req.files?.documentFile?.[0] ||
+    (Array.isArray(req.files) ? req.files[0] : null);
 
   if (!isValidObjectId(courseId)) {
     return res.status(400).json({
@@ -68,7 +75,7 @@ async function uploadDocument(req, res) {
     });
   }
 
-  if (!req.file) {
+  if (!uploadedFile) {
     return res.status(400).json({
       message: 'Document file is required',
     });
@@ -86,29 +93,34 @@ async function uploadDocument(req, res) {
     title,
     version,
     description,
-    fileName: req.file.originalname,
-    storagePath: path.relative(process.cwd(), req.file.path),
-    mimeType: req.file.mimetype,
-    size: req.file.size,
+    fileName: uploadedFile.originalname,
+    storagePath: path.relative(process.cwd(), uploadedFile.path),
+    mimeType: uploadedFile.mimetype,
+    size: uploadedFile.size,
     status: 'uploaded',
   });
 
   const payload = buildIndexPayload(document, auth.course, req.user);
   const aiResult = await requestDocumentIndex(payload);
+  let message = 'Document uploaded successfully';
 
   if (aiResult.accepted) {
     document.status = 'processing';
     document.aiRequestId = aiResult.requestId;
     document.aiErrorMessage = null;
   } else {
-    document.status = 'failed';
+    // Keep upload successful even if indexing service temporarily rejects.
+    // Teacher can trigger reindex later without losing the uploaded file.
+    document.status = 'uploaded';
+    document.aiRequestId = null;
     document.aiErrorMessage = aiResult.errorMessage;
+    message = 'Document uploaded. Indexing is pending, please reindex later.';
   }
 
   await document.save();
 
   return res.status(201).json({
-    message: 'Document uploaded successfully',
+    message,
     document: formatDocumentResponse(document),
   });
 }
@@ -290,6 +302,107 @@ async function updateDocumentActiveStatus(req, res) {
   });
 }
 
+async function updateDocumentMetadata(req, res) {
+  const { documentId } = req.params;
+  const { title, version, description } = req.body;
+
+  if (!isValidObjectId(documentId)) {
+    return res.status(400).json({
+      message: 'Invalid documentId',
+    });
+  }
+
+  const document = await CourseDocument.findById(documentId);
+
+  if (!document) {
+    return res.status(404).json({
+      message: 'Document not found',
+    });
+  }
+
+  const auth = await findCourseAndAuthorizeTeacher(document.courseId, req.user._id);
+
+  if (auth.error) {
+    return res.status(auth.error.statusCode).json({ message: auth.error.message });
+  }
+
+  if (title !== undefined) {
+    const normalizedTitle = title.toString().trim();
+
+    if (!normalizedTitle) {
+      return res.status(400).json({
+        message: 'title cannot be empty',
+      });
+    }
+
+    document.title = normalizedTitle;
+  }
+
+  if (version !== undefined) {
+    const normalizedVersion = version.toString().trim();
+
+    if (!normalizedVersion) {
+      return res.status(400).json({
+        message: 'version cannot be empty',
+      });
+    }
+
+    document.version = normalizedVersion;
+  }
+
+  if (description !== undefined) {
+    document.description = description.toString().trim();
+  }
+
+  await document.save();
+
+  return res.json({
+    message: 'Document metadata updated successfully',
+    document: formatDocumentResponse(document),
+  });
+}
+
+async function deleteDocument(req, res) {
+  const { documentId } = req.params;
+
+  if (!isValidObjectId(documentId)) {
+    return res.status(400).json({
+      message: 'Invalid documentId',
+    });
+  }
+
+  const document = await CourseDocument.findById(documentId);
+
+  if (!document) {
+    return res.status(404).json({
+      message: 'Document not found',
+    });
+  }
+
+  const auth = await findCourseAndAuthorizeTeacher(document.courseId, req.user._id);
+
+  if (auth.error) {
+    return res.status(auth.error.statusCode).json({ message: auth.error.message });
+  }
+
+  const storagePath = document.storagePath ? path.resolve(process.cwd(), document.storagePath) : null;
+
+  await CourseDocument.deleteOne({ _id: document._id });
+
+  if (storagePath && fs.existsSync(storagePath)) {
+    try {
+      fs.unlinkSync(storagePath);
+    } catch {
+      // Intentionally ignore file cleanup errors to keep API deletion idempotent.
+    }
+  }
+
+  return res.json({
+    message: 'Document deleted successfully',
+    deletedDocumentId: documentId,
+  });
+}
+
 async function updateDocumentStatus(req, res) {
   const { documentId } = req.params;
   const { status, errorMessage = null } = req.body;
@@ -345,5 +458,7 @@ module.exports = {
   getDocumentDetail,
   reindexDocument,
   updateDocumentActiveStatus,
+  updateDocumentMetadata,
+  deleteDocument,
   updateDocumentStatus,
 };
