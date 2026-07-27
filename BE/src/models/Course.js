@@ -61,7 +61,7 @@ courseSchema.pre('save', function (next) {
   if (this.teacherIds && this.teacherIds.length > 0 && !this.teacherId) {
     this.teacherId = this.teacherIds[0];
   }
-  next();
+  if (typeof next === 'function') next();
 });
 
 // ── Indexes ────────────────────────────────────────────────────

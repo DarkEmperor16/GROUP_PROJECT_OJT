@@ -15,7 +15,10 @@ async function sendQuestionToAI({ question, courseCode, courseTitle }) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          // ngrok tunnel bypass
           'ngrok-skip-browser-warning': 'true',
+          // loca.lt tunnel bypass (famous-pumas-join.loca.lt style URLs)
+          'bypass-tunnel-reminder': 'true',
           ...(process.env.AI_SERVICE_API_KEY && {
             Authorization: `Bearer ${process.env.AI_SERVICE_API_KEY}`,
           }),
