@@ -42,7 +42,7 @@ export default function StudentQuizListPage() {
                 setIsLoading(true);
                 setError(null);
 
-                // 1. Get token safely from ojt-kns-auth
+
                 const token = getAuthToken();
 
                 if (!token) {
@@ -51,12 +51,12 @@ export default function StudentQuizListPage() {
                     return;
                 }
 
-                // 2. Pass token to backend endpoint
+
                 const response = await fetch("http://localhost:3000/api/student/quizzes", {
                     method: "GET",
                     headers: {
                         "Content-Type": "application/json",
-                        "Authorization": `Bearer ${token}`,
+                        Authorization: `Bearer ${token}`,
                     },
                 });
 
@@ -68,9 +68,43 @@ export default function StudentQuizListPage() {
                     throw new Error(`Failed to fetch quizzes (${response.status})`);
                 }
 
-                const data = await response.json();
-                console.log("API Response Data:", data); 
-                setQuizzes(data);
+                const resData = await response.json();
+                console.log("API Response Data:", resData);
+
+
+                const rawList = Array.isArray(resData.data) ? resData.data : Array.isArray(resData) ? resData : [];
+
+
+                const formattedQuizzes: QuizSet[] = rawList.map((item: any) => {
+
+                    let subjectName = "General";
+                    if (item.courseId && typeof item.courseId === "object") {
+                        subjectName = item.courseId.code || item.courseId.name || item.courseId.title || "General";
+                    } else if (typeof item.courseId === "string") {
+                        subjectName = item.courseId;
+                    } else if (item.subject) {
+                        subjectName = item.subject;
+                    }
+
+
+                    let formattedTime = "15 mins";
+                    if (typeof item.timeLimit === "number") {
+                        formattedTime = `${item.timeLimit} mins`;
+                    } else if (typeof item.timeLimit === "string") {
+                        formattedTime = item.timeLimit;
+                    }
+
+                    return {
+                        id: item._id || item.quizId || item.id,
+                        title: item.title || "Untitled Quiz",
+                        subject: subjectName,
+                        questionCount: item.questionCount ?? (Array.isArray(item.questions) ? item.questions.length : 0),
+                        timeLimit: formattedTime,
+                        description: item.description || "No description provided.",
+                    };
+                });
+
+                setQuizzes(formattedQuizzes);
             } catch (err) {
                 setError(err instanceof Error ? err.message : "An unexpected error occurred");
             } finally {
@@ -112,7 +146,7 @@ export default function StudentQuizListPage() {
             )}
 
             {!isLoading && !error && quizzes.length === 0 && (
-                <div className="text-center py-12 text-muted-foreground">
+                <div className="text-center py-12 text-muted-foreground border border-dashed rounded-lg p-8">
                     <p>No quizzes available at the moment.</p>
                 </div>
             )}
