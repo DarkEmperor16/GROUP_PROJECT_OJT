@@ -16,9 +16,10 @@ export default function StudentHomePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Welcome, {user?.fullName}</h1>
+        <p className="text-sm font-medium text-primary">Student Portal</p>
+        <h1 className="text-3xl font-bold tracking-tight">Welcome, {user?.fullName}</h1>
         <p className="mt-2 text-muted-foreground">
-          Select a course and start asking AI-powered questions.
+          Select a course from your assigned subjects below to view Q&A history or ask our AI assistant.
         </p>
       </div>
 

@@ -38,6 +38,7 @@ export const useLoginMutation = () => {
   });
 };
 
+
 export const useLogoutMutation = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
