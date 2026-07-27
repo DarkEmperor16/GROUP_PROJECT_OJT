@@ -20,11 +20,7 @@ async function requestDocumentIndex(payload) {
   const aiServiceUrl = process.env.AI_SERVICE_URL;
 
   if (!aiServiceUrl) {
-    return {
-      accepted: true,
-      requestId: `mock-${crypto.randomUUID()}`,
-      providerStatus: 'queued',
-    };
+    throw new Error('AI_SERVICE_URL is not configured');
   }
 
   const endpoint = `${aiServiceUrl.replace(/\/$/, '')}/documents/index`;
@@ -70,10 +66,7 @@ async function notifyDocumentStatusChange(payload) {
   const aiServiceUrl = process.env.AI_SERVICE_URL;
 
   if (!aiServiceUrl) {
-    return {
-      accepted: true,
-      providerStatus: payload.status,
-    };
+    throw new Error('AI_SERVICE_URL is not configured');
   }
 
   const endpoint = `${aiServiceUrl.replace(/\/$/, '')}/documents/status`;
@@ -114,8 +107,42 @@ async function notifyDocumentStatusChange(payload) {
   }
 }
 
+async function proxyRequest(method, path, data = null, params = null) {
+  const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000';
+  const url = new URL(`${aiServiceUrl.replace(/\/$/, '')}${path}`);
+  if (params) {
+    Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+  }
+
+  const options = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(process.env.AI_SERVICE_API_KEY ? { Authorization: `Bearer ${process.env.AI_SERVICE_API_KEY}` } : {}),
+    },
+  };
+  
+  if (data && method !== 'GET' && method !== 'HEAD') {
+    options.body = JSON.stringify(data);
+  }
+
+  try {
+    const response = await fetch(url.toString(), options);
+    const result = await response.json().catch(() => null);
+    
+    if (!response.ok) {
+      throw new Error((result && result.message) || `AI Server Error: ${response.statusText}`);
+    }
+    
+    return result;
+  } catch (error) {
+    throw new Error(`Error proxying to AI Service: ${error.message}`);
+  }
+}
+
 module.exports = {
   buildIndexPayload,
   requestDocumentIndex,
   notifyDocumentStatusChange,
+  proxyRequest,
 };
