@@ -18,6 +18,14 @@ export const ROLE_NAV_ITEMS: Record<UserRole, RoleNavItem[]> = {
     { label: "Quiz", path: "/student/quiz" },
     { label: "History", path: "/student/history" },
   ],
-  TEACHER: [{ label: "Dashboard", path: "/teacher/dashboard", end: true }],
+  TEACHER: [
+    { label: "Dashboard", path: "/teacher/dashboard", end: true },
+    { label: "Courses", path: "/teacher/courses" },
+    { label: "Documents", path: "/teacher/documents" },
+    { label: "Review", path: "/teacher/review" },
+    { label: "Create Quiz", path: "/teacher/quizzes" },
+    { label: "AI", path: "/teacher/ai-chat" },
+    { label: "Profile", path: "/teacher/profile" },
+  ],
   ADMIN: [{ label: "Admin", path: "/admin/dashboard", end: true }],
 };

@@ -12,8 +12,13 @@ const allowedMimeTypes = new Set([
   'application/pdf',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'application/msword',
+  'application/vnd.ms-powerpoint',
+  'application/octet-stream',
   'text/plain',
 ]);
+
+const allowedExtensions = new Set(['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.txt']);
 
 const storage = multer.diskStorage({
   destination(req, file, cb) {
@@ -34,8 +39,12 @@ const uploadCourseDocument = multer({
     fileSize: 10 * 1024 * 1024,
   },
   fileFilter(req, file, cb) {
-    if (!allowedMimeTypes.has(file.mimetype)) {
-      return cb(new Error('Unsupported file type. Allowed: PDF, DOCX, PPTX, TXT'));
+    const extension = path.extname(file.originalname || '').toLowerCase();
+    const isAllowedMimeType = allowedMimeTypes.has(file.mimetype);
+    const isAllowedExtension = allowedExtensions.has(extension);
+
+    if (!isAllowedMimeType && !isAllowedExtension) {
+      return cb(new Error('Unsupported file type. Allowed: PDF, DOC, DOCX, PPT, PPTX, TXT'));
     }
 
     return cb(null, true);

@@ -2,6 +2,12 @@ const mongoose = require('mongoose');
 
 const quizSessionSchema = new mongoose.Schema(
   {
+    quizId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Quiz',
+      default: null,
+      index: true,
+    },
     courseId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Course',
@@ -30,12 +36,29 @@ const quizSessionSchema = new mongoose.Schema(
       type: Number,
       default: null,
     },
+    totalQuestions: {
+      type: Number,
+      default: null,
+    },
+    percentage: {
+      type: Number,
+      default: null,
+    },
     startedAt: {
       type: Date,
       default: Date.now,
       index: true,
     },
     completedAt: {
+      type: Date,
+      default: null,
+    },
+    gradedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    gradedAt: {
       type: Date,
       default: null,
     },

@@ -66,8 +66,50 @@ export const ROLE_ROUTE_GROUPS: RoleRouteGroup[] = [
       {
         path: "teacher/dashboard",
         lazy: lazyRoute(
-          () => import("@/features/dashboard"),
+          () => import("@/features/teacher"),
           "TeacherDashboardPage",
+        ),
+      },
+      {
+        path: "teacher/courses",
+        lazy: lazyRoute(
+          () => import("@/features/teacher"),
+          "TeacherSubjectManagementPage",
+        ),
+      },
+      {
+        path: "teacher/documents",
+        lazy: lazyRoute(
+          () => import("@/features/teacher"),
+          "TeacherDocumentManagingPage",
+        ),
+      },
+      {
+        path: "teacher/review",
+        lazy: lazyRoute(
+          () => import("@/features/teacher"),
+          "TeacherReviewPage",
+        ),
+      },
+      {
+        path: "teacher/quizzes",
+        lazy: lazyRoute(
+          () => import("@/features/teacher"),
+          "TeacherQuizCreationPage",
+        ),
+      },
+      {
+        path: "teacher/ai-chat",
+        lazy: lazyRoute(
+          () => import("@/features/teacher"),
+          "TeacherAIChatPage",
+        ),
+      },
+      {
+        path: "teacher/profile",
+        lazy: lazyRoute(
+          () => import("@/features/teacher"),
+          "TeacherProfilePage",
         ),
       },
     ],

@@ -1,0 +1,8 @@
+# Use this workspace to collaborate
+workspace:
+  id: a2dac1b7-77ae-4877-8304-e1a245ef5396
+
+localResources:
+  collections:
+    - ../BE/postman/BP-C03-Teacher-APIs.postman_collection.json
+    - ../BE/postman/BP-C04-Teacher-Feedback.postman_collection.json

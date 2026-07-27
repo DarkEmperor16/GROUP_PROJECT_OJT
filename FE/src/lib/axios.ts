@@ -16,15 +16,41 @@ function shouldSkipTokenRefresh(url?: string): boolean {
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "/api",
-  headers: {
-    "Content-Type": "application/json",
-  },
   timeout: 15000,
   withCredentials: true,
 });
 
 apiClient.interceptors.request.use(
   (config) => {
+    const headers = config.headers as
+      | ({ [key: string]: string | undefined; delete?: (name: string) => void; set?: (name: string, value: string) => void })
+      | undefined;
+
+    const hasRequestBody = config.data !== undefined && config.data !== null;
+    const isFormData = typeof FormData !== "undefined" && config.data instanceof FormData;
+
+    if (isFormData && headers) {
+      if (typeof headers.delete === "function") {
+        headers.delete("Content-Type");
+        headers.delete("content-type");
+      } else {
+        delete headers["Content-Type"];
+        delete headers["content-type"];
+      }
+    }
+
+    if (hasRequestBody && !isFormData && headers) {
+      const hasContentType = Boolean(headers["Content-Type"] || headers["content-type"]);
+
+      if (!hasContentType) {
+        if (typeof headers.set === "function") {
+          headers.set("Content-Type", "application/json");
+        } else {
+          headers["Content-Type"] = "application/json";
+        }
+      }
+    }
+
     const accessToken = useAuthStore.getState().accessToken;
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
