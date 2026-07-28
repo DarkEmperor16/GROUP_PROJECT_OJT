@@ -259,12 +259,21 @@ async function askAi(req, res) {
     const { courseId, question } = req.body;
 
     if (!courseId || !question || typeof question !== 'string' || !question.trim()) {
-      return res.status(400).json({ message: '`courseId` and a non-empty `question` string are required' });
+      return res.status(400).json({ message: '`courseId` (or course code) and a non-empty `question` string are required' });
     }
 
-    if (!requireValidObjectId(res, courseId, 'courseId')) return;
+    // Kiểm tra xem đầu vào là ObjectId hợp lệ hay là mã courseCode (ví dụ: prf-192)
+    const isObjectId = mongoose.Types.ObjectId.isValid(courseId);
+    const query = { status: 'ACTIVE' };
+    
+    if (isObjectId) {
+      query._id = courseId;
+    } else {
+      const cleanCode = courseId.replace(/-/g, ''); // Xóa dấu gạch ngang (prf-192 -> prf192)
+      query.code = new RegExp(`^${cleanCode}$`, 'i'); // Tìm kiếm không phân biệt hoa thường
+    }
 
-    const course = await Course.findOne({ _id: courseId, status: 'ACTIVE' });
+    const course = await Course.findOne(query);
     if (!course) {
       return res.status(404).json({ message: 'Course not found or inactive' });
     }

@@ -76,14 +76,27 @@ export default function StudentHistoryPage() {
                             : [];
 
 
-                const formattedHistory: HistoryItem[] = rawList.map((item: any, index: number) => ({
-                    id: item.id || item._id || index.toString(),
-                    courseId: item.courseId || item.course || "General",
-                    courseName: item.courseName || item.subject || item.courseId || "General",
-                    question: item.question || item.prompt || "No question text",
-                    answer: item.answer || item.response || item.aiResponse || "",
-                    createdAt: item.createdAt || item.date || item.timestamp,
-                }));
+                const formattedHistory: HistoryItem[] = rawList.map((item: any, index: number) => {
+                    let cName = "General";
+                    if (item.courseName) cName = item.courseName;
+                    else if (item.subject) cName = item.subject;
+                    else if (item.courseId) {
+                        if (typeof item.courseId === 'object') {
+                            cName = item.courseId.title || item.courseId.code || "General";
+                        } else {
+                            cName = item.courseId;
+                        }
+                    }
+
+                    return {
+                        id: item.id || item._id || index.toString(),
+                        courseId: typeof item.courseId === 'object' ? item.courseId._id : (item.courseId || "General"),
+                        courseName: cName,
+                        question: item.question || item.prompt || "No question text",
+                        answer: item.answer || item.response || item.aiResponse || "",
+                        createdAt: item.createdAt || item.date || item.timestamp,
+                    };
+                });
 
                 setHistory(formattedHistory);
             } catch {

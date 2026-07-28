@@ -37,14 +37,15 @@ async function sendQuestionToAI({ question, courseCode, courseTitle }) {
         if (answer) return answer;
       }
 
-      console.warn(`[aiService] External AI call returned status ${response.status}. Using fallback response.`);
+      console.warn(`[aiService] External AI call returned status ${response.status}.`);
+      throw new Error(`AI service returned status ${response.status}`);
     } catch (error) {
-      console.warn('[aiService] Failed to reach external AI service:', error.message);
+      console.error('[aiService] Failed to reach external AI service:', error.message);
+      throw error;
     }
+  } else {
+    throw new Error('AI_SERVICE_URL is not configured');
   }
-
-  // Default Mock/Fallback AI response for dev/testing when AI_SERVICE_URL is not configured
-  return `[AI Assistant - ${courseCode || 'General'}] Here is an explanation for your question about "${question}": In ${courseTitle || 'this course'}, key concepts should be thoroughly reviewed. Please check course materials for detailed slides.`;
 }
 
 module.exports = {

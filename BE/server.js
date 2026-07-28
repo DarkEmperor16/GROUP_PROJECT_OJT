@@ -1,8 +1,8 @@
+require('dotenv').config({ path: __dirname + '/.env', override: true });
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const { authenticateToken, authorizeRoles } = require('./src/middlewares/auth.middleware');
-require('dotenv').config();
 
 const authRoutes = require('./src/routes/auth.routes');
 const studentRoutes = require('./src/routes/student.routes');
@@ -16,6 +16,7 @@ const teacherQuizRoutes = require('./src/routes/teacherQuiz.routes');
 const teacherProfileRoutes = require('./src/routes/teacherProfile.routes');
 const teacherAiChatRoutes = require('./src/routes/teacherAiChat.routes');
 const internalAiRoutes = require('./src/routes/internalAi.routes');
+const aiRoutes = require('./src/routes/ai.routes');
 
 const { errorHandler } = require('./src/middlewares/error.middleware');
 const { connectDB } = require('./src/config/db');
@@ -44,6 +45,7 @@ app.use('/api/teacher', teacherQuizRoutes);
 app.use('/api/teacher', teacherProfileRoutes);
 app.use('/api/teacher', teacherAiChatRoutes);
 app.use('/api/internal/ai', internalAiRoutes);
+app.use('/api/ai', aiRoutes);
 
 app.get('/api/admin/test', authenticateToken, authorizeRoles('ADMIN'), (req, res) => {
   res.json({
