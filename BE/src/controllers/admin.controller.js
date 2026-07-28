@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const mongoose = require('mongoose');
 const User = require('../models/User');
+const Course = require('../models/Course');
 const CourseDocument = require('../models/CourseDocument');
 const QaHistory = require('../models/QaHistory');
 const { activityLogs } = require('../data/activityLogs');
@@ -479,7 +480,223 @@ function listAuditLogs(req, res) {
     limit: 50,
   });
 }
+function buildCourseResponse(course) {
+  const courseName = course.courseName || course.name || course.title || '';
+  const courseCode = course.courseCode || course.code || '';
+  const teacherIds = Array.isArray(course.teacherIds)
+    ? course.teacherIds
+    : course.teacherId
+      ? [course.teacherId]
+      : [];
+  const teacherId = course.teacherId || teacherIds[0] || '';
 
+  return {
+    id: course._id?.toString?.() || course.id,
+    courseCode,
+    courseName,
+    name: courseName,
+    title: courseName,
+    code: courseCode,
+    description: course.description || '',
+    status: course.status || 'ACTIVE',
+    teacherId: teacherId ? teacherId.toString() : '',
+    teacherIds: teacherIds.map((item) => (item ? item.toString() : item)),
+    teacherName: course.teacherName || (teacherIds.length ? 'Assigned teacher' : 'Unassigned'),
+    createdAt: course.createdAt,
+    updatedAt: course.updatedAt,
+  };
+}
+
+async function listCourses(req, res) {
+  try {
+    const { page, limit, skip } = parsePagination(req);
+
+    const search = req.query.search?.trim() || '';
+    const status = req.query.status?.trim() || '';
+
+    const filter = {};
+
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { title: { $regex: search, $options: 'i' } },
+        { code: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    if (status) {
+      filter.status = status;
+    }
+
+    const [courses, total] = await Promise.all([
+      Course.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Course.countDocuments(filter),
+    ]);
+
+    return res.json({
+      data: courses.map(buildCourseResponse),
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit) || 1,
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: err.message || 'Failed to load courses',
+    });
+  }
+}
+async function createCourse(req, res) {
+  try {
+    const courseName = req.body.courseName || req.body.name || req.body.title || '';
+    const courseCode = req.body.courseCode || req.body.code || '';
+    const description = req.body.description || '';
+    const teacherId = req.body.teacherId || (Array.isArray(req.body.teacherIds) ? req.body.teacherIds[0] : req.body.teacherIds);
+    const teacherIds = Array.isArray(req.body.teacherIds)
+      ? req.body.teacherIds
+      : teacherId
+        ? [teacherId]
+        : [];
+    const status = req.body.status || 'ACTIVE';
+
+    if (!courseName.trim()) {
+      return res.status(400).json({
+        message: 'Course name is required',
+      });
+    }
+
+    if (!courseCode.trim()) {
+      return res.status(400).json({
+        message: 'Course code is required',
+      });
+    }
+
+    const normalizedCode = courseCode.trim().toUpperCase();
+    const existed = await Course.findOne({
+      code: normalizedCode,
+    });
+
+    if (existed) {
+      return res.status(409).json({
+        message: 'Course code already exists',
+      });
+    }
+
+    const course = await Course.create({
+      name: courseName.trim(),
+      title: courseName.trim(),
+      code: normalizedCode,
+      description,
+      teacherId: teacherId || undefined,
+      teacherIds,
+      status,
+    });
+
+    return res.status(201).json({
+      data: buildCourseResponse(course),
+      course: buildCourseResponse(course),
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: err.message || 'Failed to create course',
+    });
+  }
+}
+async function updateCourse(req, res) {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        message: 'Invalid course id',
+      });
+    }
+
+    const course = await Course.findById(id);
+
+    if (!course) {
+      return res.status(404).json({
+        message: 'Course not found',
+      });
+    }
+
+    const updatePayload = {};
+
+    if (req.body.courseName !== undefined || req.body.name !== undefined || req.body.title !== undefined) {
+      const courseName = req.body.courseName || req.body.name || req.body.title || '';
+      updatePayload.name = courseName.trim();
+      updatePayload.title = courseName.trim();
+    }
+
+    if (req.body.courseCode !== undefined || req.body.code !== undefined) {
+      updatePayload.code = (req.body.courseCode || req.body.code || '').trim().toUpperCase();
+    }
+
+    if (req.body.description !== undefined) {
+      updatePayload.description = req.body.description;
+    }
+
+    if (req.body.teacherId !== undefined || req.body.teacherIds !== undefined) {
+      const teacherId = req.body.teacherId || (Array.isArray(req.body.teacherIds) ? req.body.teacherIds[0] : req.body.teacherIds);
+      const teacherIds = Array.isArray(req.body.teacherIds)
+        ? req.body.teacherIds
+        : teacherId
+          ? [teacherId]
+          : [];
+      updatePayload.teacherId = teacherId || undefined;
+      updatePayload.teacherIds = teacherIds;
+    }
+
+    if (req.body.status !== undefined) {
+      updatePayload.status = req.body.status;
+    }
+
+    Object.assign(course, updatePayload);
+
+    await course.save();
+
+    return res.json({
+      data: buildCourseResponse(course),
+      course: buildCourseResponse(course),
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: err.message || 'Failed to update course',
+    });
+  }
+}
+async function deleteCourse(req, res) {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        message: 'Invalid course id',
+      });
+    }
+
+    const course = await Course.findByIdAndDelete(id);
+
+    if (!course) {
+      return res.status(404).json({
+        message: 'Course not found',
+      });
+    }
+
+    return res.json({
+      message: 'Course deleted successfully',
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: err.message || 'Failed to delete course',
+    });
+  }
+}
 module.exports = {
   listUsers,
   createUser,
@@ -493,4 +710,8 @@ module.exports = {
   exportQaLogs,
   listDashboardLogs,
   listAuditLogs,
+  listCourses,
+  createCourse,
+  updateCourse,
+  deleteCourse,
 };
