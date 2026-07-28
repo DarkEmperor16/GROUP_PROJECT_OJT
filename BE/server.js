@@ -12,6 +12,9 @@ const teacherFeedbackRoutes = require('./src/routes/teacherFeedback.routes');
 const teacherHistoryRoutes = require('./src/routes/teacherHistory.routes');
 const teacherDashboardRoutes = require('./src/routes/teacherDashboard.routes');
 const teacherQuizQuestionRoutes = require('./src/routes/teacherQuizQuestion.routes');
+const teacherQuizRoutes = require('./src/routes/teacherQuiz.routes');
+const teacherProfileRoutes = require('./src/routes/teacherProfile.routes');
+const teacherAiChatRoutes = require('./src/routes/teacherAiChat.routes');
 const internalAiRoutes = require('./src/routes/internalAi.routes');
 const aiRoutes = require('./src/routes/ai.routes');
 
@@ -38,6 +41,9 @@ app.use('/api/teacher', teacherFeedbackRoutes);
 app.use('/api/teacher', teacherHistoryRoutes);
 app.use('/api/teacher', teacherDashboardRoutes);
 app.use('/api/teacher', teacherQuizQuestionRoutes);
+app.use('/api/teacher', teacherQuizRoutes);
+app.use('/api/teacher', teacherProfileRoutes);
+app.use('/api/teacher', teacherAiChatRoutes);
 app.use('/api/internal/ai', internalAiRoutes);
 app.use('/api/ai', aiRoutes);
 

@@ -28,6 +28,30 @@ const userSchema = new mongoose.Schema(
       enum: ['ACTIVE', 'INACTIVE'],
       default: 'ACTIVE',
     },
+    title: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    major: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    teacherId: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    photoUrl: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    mfaEnabled: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
