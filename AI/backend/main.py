@@ -8,6 +8,12 @@ base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 env_path = os.path.join(base_dir, "BE", ".env")
 load_dotenv(dotenv_path=env_path)
 
+# Cấu hình thư mục cache cục bộ cho HuggingFace để tránh tải lại model mỗi lần chạy
+hf_cache_dir = os.path.join(base_dir, "AI", "backend", "data", "model_cache")
+os.makedirs(hf_cache_dir, exist_ok=True)
+os.environ["HF_HOME"] = hf_cache_dir
+os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
+
 from app.api import chat_router, quiz_router, documents_router
 
 app = FastAPI(title="Aviation RAG API")

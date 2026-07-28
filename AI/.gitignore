@@ -77,6 +77,8 @@ backend/data/semantic_cache/*
 !backend/data/semantic_cache/.keep
 backend/data/quizzes/*
 !backend/data/quizzes/.keep
+backend/data/model_cache/*
+!backend/data/model_cache/.keep
 backend/data/document_metadata.json
 /donttouch
 
