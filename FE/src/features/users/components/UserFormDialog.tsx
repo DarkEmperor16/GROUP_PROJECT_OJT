@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { X } from "lucide-react";
-import RoleSelector from "@/features/auth/components/RoleSelector";
 import {
   createUserSchema,
   updateUserSchema,
@@ -192,11 +191,16 @@ export default function UserFormDialog({
                   <FormItem>
                     <FormLabel>Role</FormLabel>
                     <FormControl>
-                      <RoleSelector
+                      <select
+                        className={selectClassName}
                         value={field.value}
                         onChange={field.onChange}
                         disabled={isSubmitting}
-                      />
+                      >
+                        <option value="STUDENT">Student</option>
+                        <option value="TEACHER">Teacher</option>
+                        <option value="ADMIN">Admin</option>
+                      </select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -323,11 +327,16 @@ export default function UserFormDialog({
                   <FormItem>
                     <FormLabel>Role</FormLabel>
                     <FormControl>
-                      <RoleSelector
+                      <select
+                        className={selectClassName}
                         value={field.value}
                         onChange={field.onChange}
                         disabled={isSubmitting}
-                      />
+                      >
+                        <option value="STUDENT">Student</option>
+                        <option value="TEACHER">Teacher</option>
+                        <option value="ADMIN">Admin</option>
+                      </select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

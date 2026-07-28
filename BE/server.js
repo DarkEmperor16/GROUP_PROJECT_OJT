@@ -16,6 +16,7 @@ const teacherQuizRoutes = require('./src/routes/teacherQuiz.routes');
 const teacherProfileRoutes = require('./src/routes/teacherProfile.routes');
 const teacherAiChatRoutes = require('./src/routes/teacherAiChat.routes');
 const internalAiRoutes = require('./src/routes/internalAi.routes');
+const adminRoutes = require('./src/routes/admin.routes');
 
 const { errorHandler } = require('./src/middlewares/error.middleware');
 const { connectDB } = require('./src/config/db');
@@ -44,6 +45,7 @@ app.use('/api/teacher', teacherQuizRoutes);
 app.use('/api/teacher', teacherProfileRoutes);
 app.use('/api/teacher', teacherAiChatRoutes);
 app.use('/api/internal/ai', internalAiRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.get('/api/admin/test', authenticateToken, authorizeRoles('ADMIN'), (req, res) => {
   res.json({

@@ -124,6 +124,22 @@ export const ROLE_ROUTE_GROUPS: RoleRouteGroup[] = [
           "AdminDashboardPage",
         ),
       },
+      {
+        path: "admin/users",
+        lazy: lazyRoute(() => import("@/features/users"), "UserManagementPage"),
+      },
+      {
+        path: "admin/courses",
+        lazy: lazyRoute(() => import("@/features/courses"), "CourseManagementPage"),
+      },
+      {
+        path: "admin/documents",
+        lazy: lazyRoute(() => import("@/features/documents"), "AdminDocumentsPage"),
+      },
+      {
+        path: "admin/qa",
+        lazy: lazyRoute(() => import("@/features/qa"), "AdminQaHistoryPage"),
+      },
     ],
   },
 ];
