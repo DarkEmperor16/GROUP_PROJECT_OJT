@@ -30,9 +30,33 @@ interface BackendCourseResult {
   };
 }
 
+function normalizeCourseValue(course: any): Course {
+  const courseName = course.courseName || course.name || course.title || "Untitled course";
+  const courseCode = course.courseCode || course.code || "";
+  const teacherIds = Array.isArray(course.teacherIds)
+    ? course.teacherIds
+    : course.teacherId
+      ? [course.teacherId]
+      : [];
+  const teacherId = course.teacherId || teacherIds[0]?.toString?.() || "";
+
+  return {
+    id: course.id || course._id?.toString?.() || "",
+    courseCode,
+    courseName,
+    description: course.description || "",
+    teacherId,
+    teacherName: course.teacherName || (teacherIds.length ? "Assigned teacher" : "Unassigned"),
+    status: (course.status as CourseStatus) || "ACTIVE",
+    enrollmentCount: course.enrollmentCount ?? 0,
+    createdAt: course.createdAt || "",
+    updatedAt: course.updatedAt || "",
+  };
+}
+
 function normalizeListResponse(payload: BackendListResult): PaginatedCourses {
   const body = payload.result ?? payload;
-  const data = body.data ?? payload.courses ?? [];
+  const data = (body.data ?? payload.courses ?? []).map(normalizeCourseValue);
   const meta = body.meta ?? payload.meta ?? payload.pagination;
 
   if (!meta) {
@@ -58,7 +82,25 @@ function normalizeCourseResponse(payload: BackendCourseResult): Course {
     throw new Error("Invalid course response from server");
   }
 
-  return course;
+  return normalizeCourseValue(course);
+}
+
+function mapPayloadToBackend(payload: CreateCoursePayload) {
+  const courseName = payload.courseName?.trim() || "";
+  const courseCode = payload.courseCode?.trim() || "";
+  const teacherId = payload.teacherId?.trim() || "";
+
+  return {
+    courseName,
+    courseCode,
+    name: courseName,
+    title: courseName,
+    code: courseCode,
+    description: payload.description ?? "",
+    teacherId: teacherId || undefined,
+    teacherIds: teacherId ? [teacherId] : [],
+    status: payload.status,
+  };
 }
 
 function buildListQuery(params: CourseListParams) {
@@ -86,16 +128,16 @@ export const courseService = {
   async create(payload: CreateCoursePayload): Promise<Course> {
     const data = (await apiClient.post(
       API_ENDPOINTS.COURSES.CREATE,
-      payload,
+      mapPayloadToBackend(payload),
     )) as BackendCourseResult;
 
     return normalizeCourseResponse(data);
   },
 
   async update(id: string, payload: UpdateCoursePayload): Promise<Course> {
-    const data = (await apiClient.put(
+    const data = (await apiClient.patch(
       API_ENDPOINTS.COURSES.UPDATE(id),
-      payload,
+      mapPayloadToBackend(payload),
     )) as BackendCourseResult;
 
     return normalizeCourseResponse(data);

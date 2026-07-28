@@ -10,7 +10,12 @@ import {
   useUsersQuery,
 } from "@/features/users/hooks/useUsers";
 import type { CreateUserSchemaType, UpdateUserSchemaType } from "@/features/users/schema";
-import type { ManagedUser, UserListParams } from "@/features/users/types";
+import type {
+  CreateUserPayload,
+  ManagedUser,
+  UpdateUserPayload,
+  UserListParams,
+} from "@/features/users/types";
 import { ErrorState } from "@/shared/components/common/StatusStates";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
@@ -58,7 +63,16 @@ export default function UserManagementPage() {
   };
 
   const handleCreate = (data: CreateUserSchemaType) => {
-    createMutation.mutate(data, {
+    const payload: CreateUserPayload = {
+      fullName: data.fullName,
+      email: data.email,
+      userCode: data.userCode,
+      password: data.password,
+      role: data.role,
+      status: data.status,
+    };
+
+    createMutation.mutate(payload, {
       onSuccess: () => closeDialog(),
     });
   };
@@ -66,8 +80,16 @@ export default function UserManagementPage() {
   const handleUpdate = (data: UpdateUserSchemaType) => {
     if (!selectedUser) return;
 
+    const payload: UpdateUserPayload = {
+      fullName: data.fullName,
+      email: data.email,
+      userCode: data.userCode,
+      role: data.role,
+      status: data.status,
+    };
+
     updateMutation.mutate(
-      { id: selectedUser.id, payload: data },
+      { id: selectedUser.id, payload },
       { onSuccess: () => closeDialog() },
     );
   };

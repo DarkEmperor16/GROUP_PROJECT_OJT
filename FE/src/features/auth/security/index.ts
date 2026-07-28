@@ -24,6 +24,5 @@ export { auditLogService, twoFactorService } from "./services";
 export { useAuditLogs } from "./hooks/useAuditLogs";
 export { useTwoFactorVerifyMutation } from "./hooks/useTwoFactorVerify";
 
-export { default as AuthSecurityAlert } from "./components/AuthSecurityAlert";
 export { default as TwoFactorForm } from "./components/TwoFactorForm";
 export { default as AuditLogTable } from "./components/AuditLogTable";

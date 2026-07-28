@@ -28,6 +28,11 @@ const userSchema = new mongoose.Schema(
       enum: ['ACTIVE', 'INACTIVE'],
       default: 'ACTIVE',
     },
+    userCode: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     title: {
       type: String,
       default: '',

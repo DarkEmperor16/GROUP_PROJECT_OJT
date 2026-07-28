@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosHeaders } from "axios";
 import { useAuthStore } from "@/features/auth/store";
 import { extractTokenPair } from "@/features/auth/utils/tokenResponse";
 import { API_ENDPOINTS } from "@/shared/constants";
@@ -22,38 +22,29 @@ const apiClient = axios.create({
 
 apiClient.interceptors.request.use(
   (config) => {
-    const headers = config.headers as
-      | ({ [key: string]: string | undefined; delete?: (name: string) => void; set?: (name: string, value: string) => void })
-      | undefined;
+    const headers = AxiosHeaders.from(config.headers ?? {});
 
     const hasRequestBody = config.data !== undefined && config.data !== null;
     const isFormData = typeof FormData !== "undefined" && config.data instanceof FormData;
 
-    if (isFormData && headers) {
-      if (typeof headers.delete === "function") {
-        headers.delete("Content-Type");
-        headers.delete("content-type");
-      } else {
-        delete headers["Content-Type"];
-        delete headers["content-type"];
-      }
+    if (isFormData) {
+      headers.delete("Content-Type");
+      headers.delete("content-type");
     }
 
-    if (hasRequestBody && !isFormData && headers) {
-      const hasContentType = Boolean(headers["Content-Type"] || headers["content-type"]);
+    if (hasRequestBody && !isFormData) {
+      const hasContentType = Boolean(headers.get("Content-Type") || headers.get("content-type"));
 
       if (!hasContentType) {
-        if (typeof headers.set === "function") {
-          headers.set("Content-Type", "application/json");
-        } else {
-          headers["Content-Type"] = "application/json";
-        }
+        headers.set("Content-Type", "application/json");
       }
     }
+
+    config.headers = headers;
 
     const accessToken = useAuthStore.getState().accessToken;
     if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
+      config.headers.set("Authorization", `Bearer ${accessToken}`);
     }
     return config;
   },

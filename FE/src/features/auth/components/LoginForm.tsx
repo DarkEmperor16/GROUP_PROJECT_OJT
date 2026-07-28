@@ -26,12 +26,12 @@ import { Input } from "@/shared/components/ui/input";
 import { useLoginMutation } from "@/features/auth/hooks/useAuth";
 import { loginSchema, type LoginSchemaType } from "@/features/auth/schema";
 import {
-  AuthSecurityAlert,
   TwoFactorForm,
   getTwoFactorChallengeToken,
   isTwoFactorRequired,
   parseAuthSecurityError,
 } from "@/features/auth/security";
+import AuthSecurityAlert from "@/features/auth/security/components/AuthSecurityAlert";
 import type {
   AuthSecurityAlert as AuthSecurityAlertModel,
   TwoFactorChallenge,

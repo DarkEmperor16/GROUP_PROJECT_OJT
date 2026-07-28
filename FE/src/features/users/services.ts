@@ -112,5 +112,6 @@ export const userService = {
 
 export const userQueryKeys = {
   all: QUERY_KEYS.USERS,
-  list: (params: UserListParams) => [...QUERY_KEYS.USERS, "list", params] as const,
+  list: (params: UserListParams) =>
+    [...QUERY_KEYS.USERS, "list", params] as const,
 };
