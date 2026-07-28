@@ -27,5 +27,11 @@ export const ROLE_NAV_ITEMS: Record<UserRole, RoleNavItem[]> = {
     { label: "AI", path: "/teacher/ai-chat" },
     { label: "Profile", path: "/teacher/profile" },
   ],
-  ADMIN: [{ label: "Admin", path: "/admin/dashboard", end: true }],
+  ADMIN: [
+    { label: "Dashboard", path: "/admin/dashboard", end: true },
+    { label: "Users", path: "/admin/users" },
+    { label: "Courses", path: "/admin/courses" },
+    { label: "Documents", path: "/admin/documents" },
+    { label: "Q&A Logs", path: "/admin/qa" },
+  ],
 };
