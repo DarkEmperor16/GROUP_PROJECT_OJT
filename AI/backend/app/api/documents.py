@@ -326,14 +326,67 @@ def index_document(request: dict, background_tasks: BackgroundTasks):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+def _remove_document_from_ai_background(document_id: str):
+    """Xóa document_id khỏi metadata và tái tạo lại Vector DB."""
+    metadata_store = _load_metadata()
+    docs_to_delete = [
+        d for d in metadata_store.get("documents", []) 
+        if str(d.get("document_id", "")) == str(document_id) or str(document_id) in d.get("filename", "")
+    ]
+    
+    if not docs_to_delete:
+        return
+
+    # 1. Loại bỏ khỏi metadata
+    updated_docs = [d for d in metadata_store["documents"] if d not in docs_to_delete]
+    metadata_store["documents"] = updated_docs
+    _save_metadata(metadata_store)
+
+    # 2. Xóa file vật lý
+    for doc in docs_to_delete:
+        file_path = os.path.join(base_dir, "data", "docs", doc["filename"])
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+    # 3. Tái tạo lại Vector DB (Re-index)
+    from app.api.chat import vector_service, doc_service
+    vector_service.clear()
+
+    docs_dir = os.path.join(base_dir, "data", "docs")
+    if os.path.exists(docs_dir):
+        all_files = os.listdir(docs_dir)
+        for filename in all_files:
+            doc_info = next((d for d in updated_docs if d["filename"] == filename), None)
+            if doc_info:
+                file_path = os.path.join(docs_dir, filename)
+                try:
+                    extracted_data = doc_service.extract_text(file_path)
+                    chunks = doc_service.chunk_text(extracted_data, common_metadata={
+                        "source": filename, 
+                        "subject": doc_info["subject"]
+                    })
+                    vector_service.add_documents(chunks)
+                except Exception as e:
+                    print(f"[FAISS Rebuild Error for {filename}]: {e}")
+
+    vector_service.save_local(os.path.join(base_dir, "data", "vector_db"))
+    print(f"[AI] Đã hoàn tất xóa và re-index Vector DB cho documentId: {document_id}")
+
 @router.post("/status")
-async def update_status(payload: dict):
+async def update_status(payload: dict, background_tasks: BackgroundTasks):
     """
-    Endpoint nhận cập nhật trạng thái từ BE (tránh lỗi 404).
+    Endpoint nhận cập nhật trạng thái từ BE.
+    Xử lý SEC-F2.11: Xóa vector khi nhận status inactive/deleted.
     """
+    status = payload.get("status", "received")
+    document_id = payload.get("documentId")
+    
+    if status in ["inactive", "deleted"] and document_id:
+        background_tasks.add_task(_remove_document_from_ai_background, document_id)
+        
     return {
         "accepted": True,
-        "status": payload.get("status", "received")
+        "status": status
     }
 
 @router.get("/")

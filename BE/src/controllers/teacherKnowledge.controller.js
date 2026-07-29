@@ -387,6 +387,14 @@ async function deleteDocument(req, res) {
 
   const storagePath = document.storagePath ? path.resolve(process.cwd(), document.storagePath) : null;
 
+  // SEC-F2.11: Báo cho AI xóa document (Reindex)
+  await notifyDocumentStatusChange({
+    documentId: document._id.toString(),
+    courseId: document.courseId.toString(),
+    status: 'deleted',
+    updatedBy: req.user._id.toString(),
+  });
+
   await CourseDocument.deleteOne({ _id: document._id });
 
   if (storagePath && fs.existsSync(storagePath)) {
