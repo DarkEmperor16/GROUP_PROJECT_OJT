@@ -9,6 +9,7 @@ const {
   askAi,
   getQuestions,
 } = require('../controllers/student.controller');
+const { aiRateLimiter } = require('../middlewares/rateLimit.middleware');
 
 const router = express.Router();
 
@@ -43,6 +44,6 @@ router.get('/history', getHistory);
 // ── AI Chat Proxy ─────────────────────────────────────────────
 // POST /api/student/ask-ai
 // Body: { "courseId": "<id>", "question": "..." }
-router.post('/ask-ai', askAi);
+router.post('/ask-ai', aiRateLimiter, askAi);
 
 module.exports = router;
