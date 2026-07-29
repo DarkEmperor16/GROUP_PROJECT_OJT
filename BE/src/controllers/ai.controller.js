@@ -15,7 +15,8 @@ const proxyToAi = async (req, res) => {
     
     res.status(200).json(result);
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('[proxyToAi]', error);
+    res.status(500).json({ success: false, message: 'AI service temporarily unavailable' });
   }
 };
 
