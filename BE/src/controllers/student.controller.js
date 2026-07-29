@@ -258,8 +258,13 @@ async function askAi(req, res) {
   try {
     const { courseId, question } = req.body;
 
-    if (!courseId || !question || typeof question !== 'string' || !question.trim()) {
+    if (!courseId || typeof courseId !== 'string' || !question || typeof question !== 'string' || !question.trim()) {
       return res.status(400).json({ message: '`courseId` (or course code) and a non-empty `question` string are required' });
+    }
+
+    const MAX_QUESTION_LEN = 2000;
+    if (question.trim().length > MAX_QUESTION_LEN) {
+      return res.status(400).json({ message: `Question exceeds maximum allowed length of ${MAX_QUESTION_LEN} characters` });
     }
 
     // Kiểm tra xem đầu vào là ObjectId hợp lệ hay là mã courseCode (ví dụ: prf-192)
@@ -269,8 +274,12 @@ async function askAi(req, res) {
     if (isObjectId) {
       query._id = courseId;
     } else {
-      const cleanCode = courseId.replace(/-/g, ''); // Xóa dấu gạch ngang (prf-192 -> prf192)
-      query.code = new RegExp(`^${cleanCode}$`, 'i'); // Tìm kiếm không phân biệt hoa thường
+      // Strips non-alphanumeric chars to prevent Regex/ReDoS injection (e.g. prf-192 -> prf192)
+      const sanitizedCode = courseId.replace(/[^a-zA-Z0-9]/g, '');
+      if (!sanitizedCode) {
+        return res.status(400).json({ message: 'Invalid `courseId` format' });
+      }
+      query.code = new RegExp(`^${sanitizedCode}$`, 'i'); // Tìm kiếm không phân biệt hoa thường
     }
 
     const course = await Course.findOne(query);
