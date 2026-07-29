@@ -106,6 +106,24 @@ def _index_wrapper_background(source_path: str, dest_path: str, filename: str, n
         if document_id:
             _notify_be_status(document_id, "failed", str(e))
 
+def _verify_magic_bytes(upload_file: UploadFile, ext: str) -> bool:
+    """Kiểm tra Magic Bytes của file để chống Extension Spoofing (SEC-F2.6)."""
+    if ext == '.txt':
+        return True
+        
+    magic = upload_file.file.read(4)
+    upload_file.file.seek(0)
+    hex_magic = magic.hex().upper()
+    
+    if ext == '.pdf' and hex_magic == '25504446':
+        return True
+    if ext in ['.docx', '.pptx'] and hex_magic == '504B0304':
+        return True
+    if ext in ['.doc', '.ppt'] and hex_magic == 'D0CF11E0':
+        return True
+        
+    return False
+
 @router.post("/upload")
 async def upload_document(
     background_tasks: BackgroundTasks,
@@ -117,8 +135,13 @@ async def upload_document(
     """
     try:
         import uuid
+        ext = os.path.splitext(file.filename)[1].lower()
+        
+        # SEC-F2.6: Kiểm tra Magic Bytes ở đầu AI
+        if not _verify_magic_bytes(file, ext):
+            raise HTTPException(status_code=400, detail="Lỗi bảo mật: Định dạng file bị giả mạo (Magic Bytes mismatch).")
+            
         normalized_subject = _normalize_subject(subject)
-        ext = os.path.splitext(file.filename)[1]
         safe_filename = f"{uuid.uuid4().hex}{ext}"
         file_location = os.path.join(base_dir, "data", "docs", safe_filename)
         os.makedirs(os.path.dirname(file_location), exist_ok=True)
@@ -138,6 +161,8 @@ async def upload_document(
             "message": f"Đang xử lý tài liệu '{file.filename}' trong nền. Vui lòng chờ vài phút.",
             "subject": normalized_subject
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi khi lưu tài liệu '{file.filename}': {str(e)}")
 
