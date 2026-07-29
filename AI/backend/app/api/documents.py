@@ -1,9 +1,12 @@
 import json
 import os
 import shutil
+import uuid
+import urllib.request
+import urllib.error
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, BackgroundTasks
 from pydantic import BaseModel
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from app.services.document_service import DocumentService
 from app.api.chat import vector_service
@@ -57,6 +60,51 @@ def _process_single_file_background(file_location: str, filename: str, normalize
         _save_metadata(metadata_store)
     except Exception as e:
         print(f"[Error processing {filename}]: {e}")
+
+def _notify_be_status(document_id: str, status: str, error_message: str = None):
+    """Gọi webhook báo cáo trạng thái xử lý về cho Backend Node.js."""
+    if not document_id:
+        return
+    try:
+        url = f"http://localhost:3000/api/internal/ai/documents/{document_id}/status"
+        payload = {"status": status}
+        if error_message:
+            payload["errorMessage"] = error_message
+            
+        data = json.dumps(payload).encode('utf-8')
+        req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'}, method='POST')
+        with urllib.request.urlopen(req) as response:
+            print(f"[Webhook] Notified BE for {document_id}, status: {status}")
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode('utf-8')
+        print(f"[Webhook Error] Failed to notify BE for {document_id}: HTTP {e.code} - {error_body}")
+    except Exception as e:
+        print(f"[Webhook Error] Failed to notify BE for {document_id}: {e}")
+
+def _index_wrapper_background(source_path: str, dest_path: str, filename: str, normalized_subject: str, document_id: str = None):
+    """Wrapper chạy ngầm để copy file và xử lý RAG mà không block request."""
+    try:
+        # Copy file
+        os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+        shutil.copy2(source_path, dest_path)
+        
+        # Cập nhật metadata ngay khi copy xong để hiện lên UI
+        metadata_store = _load_metadata()
+        if not any(d["filename"] == filename and d["subject"] == normalized_subject for d in metadata_store["documents"]):
+            metadata_store["documents"].append({"filename": filename, "subject": normalized_subject})
+        _save_metadata(metadata_store)
+        
+        # Gọi tiến trình RAG nặng
+        _process_single_file_background(dest_path, filename, normalized_subject)
+        
+        # Báo cáo thành công về BE
+        if document_id:
+            _notify_be_status(document_id, "active")
+    except Exception as e:
+        print(f"[Background Index Error for {filename}]: {e}")
+        # Báo cáo thất bại về BE
+        if document_id:
+            _notify_be_status(document_id, "failed", str(e))
 
 @router.post("/upload")
 async def upload_document(
@@ -199,6 +247,61 @@ async def ingest_folder_from_path(request: FolderIngestRequest, background_tasks
         "message": f"Đã tiếp nhận yêu cầu quét thư mục {request.folder_path}. Hệ thống đang xử lý ngầm (hãy kiểm tra lại sau ít phút).",
         "processed_count": len(files_to_process),
         "details": []
+    }
+
+@router.post("/index")
+def index_document(request: dict, background_tasks: BackgroundTasks):
+    """
+    Endpoint nhận yêu cầu index từ BE Node.js.
+    """
+    try:
+        storage_path = request.get("storagePath")
+        if not storage_path:
+            raise HTTPException(status_code=400, detail="Missing storagePath in payload")
+            
+        file_name = request.get("fileName", "unknown_file")
+        course_code = request.get("courseCode", "unknown_course")
+        document_id = request.get("documentId")
+
+        project_root = os.path.dirname(os.path.dirname(base_dir))
+        
+        # Resolve file path từ storagePath của BE
+        file_path = os.path.join(project_root, "BE", storage_path)
+        
+        # Nếu BE truyền đường dẫn tuyệt đối hoặc không có folder BE
+        if not os.path.exists(file_path):
+            file_path_fallback = os.path.join(project_root, storage_path)
+            if os.path.exists(file_path_fallback):
+                file_path = file_path_fallback
+            else:
+                raise HTTPException(status_code=404, detail=f"Không tìm thấy file từ storagePath: {storage_path}")
+
+        normalized_subject = _normalize_subject(course_code)
+        
+        # Sửa lại đường dẫn đích chính xác hơn
+        dest_path = os.path.join(base_dir, "data", "docs", file_name)
+
+        # Đẩy toàn bộ quá trình copy file và chạy RAG vào Background để trả về kết quả ngay lập tức
+        background_tasks.add_task(_index_wrapper_background, file_path, dest_path, file_name, normalized_subject, document_id)
+
+        return {
+            "accepted": True,
+            "requestId": f"ai-{uuid.uuid4()}",
+            "status": "processing"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/status")
+async def update_status(payload: dict):
+    """
+    Endpoint nhận cập nhật trạng thái từ BE (tránh lỗi 404).
+    """
+    return {
+        "accepted": True,
+        "status": payload.get("status", "received")
     }
 
 @router.get("/")
