@@ -1,0 +1,12 @@
+node_modules
+npm-debug.log
+.env
+.env.local
+.env.*.local
+.git
+.gitignore
+.prettierrc
+README.md
+postman
+POSTMAN_BP-C03_TEST.md
+uploads
