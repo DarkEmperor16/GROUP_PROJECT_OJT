@@ -2,8 +2,10 @@ import json
 import os
 import re
 from typing import List, Optional
+import urllib.request
+import urllib.error
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -11,6 +13,21 @@ from app.core.security import is_prompt_injection, sanitize_input
 from app.services.cache_service import SemanticCacheService
 from app.services.chat_service import ChatService
 from app.services.vector_service import VectorService
+
+def send_audit_log(user_id: str, message: str):
+    try:
+        url = "http://localhost:3000/api/internal/ai/audit-log"
+        data = json.dumps({
+            "userId": user_id,
+            "ip": "unknown_ai_backend",
+            "action": "PROMPT_INJECTION_BLOCKED",
+            "threatScore": 100,
+            "details": message
+        }).encode('utf-8')
+        req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
+        urllib.request.urlopen(req, timeout=5)
+    except Exception as e:
+        print(f"[Audit Log Error]: {e}")
 
 router = APIRouter()
 
@@ -86,7 +103,7 @@ semantic_cache = SemanticCacheService()
 
 
 @router.post("/completions")
-async def chat_completions(request: ChatRequest):
+async def chat_completions(request: ChatRequest, background_tasks: BackgroundTasks):
     """Stream RAG chat responses for AI-F4 and AI-F5."""
     clean_message = sanitize_input(request.message)
     subject = _normalize_subject(request.subject) if request.subject else ""
@@ -96,6 +113,9 @@ async def chat_completions(request: ChatRequest):
         raise HTTPException(status_code=400, detail="Message is required.")
 
     if is_prompt_injection(clean_message):
+        # Lưu log sang Backend Node.js chạy ngầm
+        background_tasks.add_task(send_audit_log, user_id, clean_message)
+        
         blocked_answer = "He thong phat hien noi dung khong an toan va tu choi xu ly."
 
         def blocked_generator():
