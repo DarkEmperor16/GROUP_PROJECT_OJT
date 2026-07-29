@@ -9,6 +9,7 @@
     "db:init": "node src/scripts/init-db.js",
     "db:seed": "node src/scripts/seed-student-data.js",
     "db:seed:aviation": "node src/scripts/seed-aviation-quizzes.js",
+    "db:seed:auth": "node src/scripts/seed-auth-users.js",
     "test": "jest --coverage",
     "test:watch": "jest --watch",
     "lint": "eslint src/",
