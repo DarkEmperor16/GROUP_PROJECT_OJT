@@ -6,6 +6,7 @@ const Enrollment = require('../models/Enrollment');
 const QuizSession = require('../models/QuizSession');
 const { paginate } = require('../utils/paginate');
 const { sendQuestionToAI } = require('../utils/aiService');
+const sanitizeHtml = require('sanitize-html');
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -262,6 +263,8 @@ async function askAi(req, res) {
       return res.status(400).json({ message: '`courseId` (or course code) and a non-empty `question` string are required' });
     }
 
+    const cleanQuestion = sanitizeHtml(question.trim());
+
     // Kiểm tra xem đầu vào là ObjectId hợp lệ hay là mã courseCode (ví dụ: prf-192)
     const isObjectId = mongoose.Types.ObjectId.isValid(courseId);
     const query = { status: 'ACTIVE' };
@@ -280,7 +283,7 @@ async function askAi(req, res) {
 
     // 1. Get AI response from connector/pipeline
     const answer = await sendQuestionToAI({
-      question: question.trim(),
+      question: cleanQuestion,
       courseCode: course.code,
       courseTitle: course.title,
     });
@@ -289,7 +292,7 @@ async function askAi(req, res) {
     const historyRecord = await QaHistory.create({
       studentId: req.user._id,
       courseId: course._id,
-      question: question.trim(),
+      question: cleanQuestion,
       answer,
     });
 

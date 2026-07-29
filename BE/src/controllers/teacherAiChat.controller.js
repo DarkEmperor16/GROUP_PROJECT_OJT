@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Course = require('../models/Course');
 const { sendQuestionToAI } = require('../utils/aiService');
+const sanitizeHtml = require('sanitize-html');
 
 function isValidObjectId(value) {
   return mongoose.Types.ObjectId.isValid(value);
@@ -38,6 +39,8 @@ async function askTeacherAi(req, res) {
     });
   }
 
+  const cleanQuestion = sanitizeHtml(question.trim());
+
   const courseResult = await resolveTeacherCourse(courseId, req.user._id);
 
   if (courseResult.error) {
@@ -45,13 +48,13 @@ async function askTeacherAi(req, res) {
   }
 
   const answer = await sendQuestionToAI({
-    question: question.trim(),
+    question: cleanQuestion,
     courseCode: courseResult.course.code,
     courseTitle: courseResult.course.name,
   });
 
   return res.json({
-    question: question.trim(),
+    question: cleanQuestion,
     answer,
     course: {
       id: courseResult.course._id,
