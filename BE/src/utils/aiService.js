@@ -6,6 +6,8 @@
  * to ensure local development and testing do not break.
  */
 
+const sanitizeHtml = require('sanitize-html');
+
 async function sendQuestionToAI({ question, courseCode, courseTitle }) {
   const aiEndpoint = process.env.AI_SERVICE_URL;
 
@@ -33,8 +35,14 @@ async function sendQuestionToAI({ question, courseCode, courseTitle }) {
       if (response.ok) {
         const data = await response.json();
         // Support common API response shapes
-        const answer = data.answer || data.response || data.result || data.message;
-        if (answer) return answer;
+        const rawAnswer = data.answer || data.response || data.result || data.message;
+        if (rawAnswer) {
+          // SEC-F6.7: Lọc phản hồi AI trước khi trả về để chống XSS (Output Guardrail)
+          const cleanAnswer = sanitizeHtml(rawAnswer, {
+            allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img']),
+          });
+          return cleanAnswer;
+        }
       }
 
       console.warn(`[aiService] External AI call returned status ${response.status}.`);
