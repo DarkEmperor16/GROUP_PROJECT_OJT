@@ -116,8 +116,11 @@ async def upload_document(
     Endpoint tải lên và xử lý 1 tài liệu trong nền (Background Task).
     """
     try:
+        import uuid
         normalized_subject = _normalize_subject(subject)
-        file_location = os.path.join(base_dir, "data", "docs", file.filename)
+        ext = os.path.splitext(file.filename)[1]
+        safe_filename = f"{uuid.uuid4().hex}{ext}"
+        file_location = os.path.join(base_dir, "data", "docs", safe_filename)
         os.makedirs(os.path.dirname(file_location), exist_ok=True)
 
         with open(file_location, "wb+") as file_object:
@@ -278,8 +281,12 @@ def index_document(request: dict, background_tasks: BackgroundTasks):
 
         normalized_subject = _normalize_subject(course_code)
         
-        # Sửa lại đường dẫn đích chính xác hơn
-        dest_path = os.path.join(base_dir, "data", "docs", file_name)
+        import uuid
+        ext = os.path.splitext(file_name)[1]
+        safe_filename = f"{document_id}{ext}" if document_id else f"{uuid.uuid4().hex}{ext}"
+        
+        # Sửa lại đường dẫn đích chính xác hơn, lưu bằng safe_filename
+        dest_path = os.path.join(base_dir, "data", "docs", safe_filename)
 
         # Đẩy toàn bộ quá trình copy file và chạy RAG vào Background để trả về kết quả ngay lập tức
         background_tasks.add_task(_index_wrapper_background, file_path, dest_path, file_name, normalized_subject, document_id)

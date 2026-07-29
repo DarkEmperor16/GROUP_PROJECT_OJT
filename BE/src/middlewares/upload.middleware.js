@@ -26,10 +26,10 @@ const storage = multer.diskStorage({
   },
   filename(req, file, cb) {
     const ext = path.extname(file.originalname);
-    const baseName = path.basename(file.originalname, ext).replace(/\s+/g, '-').toLowerCase();
-    const timestamp = Date.now();
+    // SEC-F2.5: Sử dụng UUID để bảo mật tên file gốc
+    const randomName = require('crypto').randomUUID();
 
-    cb(null, `${baseName}-${timestamp}${ext}`);
+    cb(null, `${randomName}${ext}`);
   },
 });
 
