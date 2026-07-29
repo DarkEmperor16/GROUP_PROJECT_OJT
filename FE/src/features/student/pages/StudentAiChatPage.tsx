@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Send, Bot, User, Loader2 } from "lucide-react";
 
 interface Message {
@@ -20,17 +20,31 @@ const getAuthToken = (): string | null => {
     }
 };
 
+const renderMessage = (content: string) => {
+    if (!content) return null;
+    const parts = content.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, index) => {
+        if (part.startsWith("**") && part.endsWith("**")) {
+            return <strong key={index} className="font-semibold text-primary">{part.slice(2, -2)}</strong>;
+        }
+        return <span key={index}>{part}</span>;
+    });
+};
+
 export default function StudentAiChatPage() {
     const { subjectId } = useParams<{ subjectId: string }>();
     const navigate = useNavigate();
 
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const location = useLocation();
+    const courseCode = location.state?.courseCode || subjectId;
+    
     const [messages, setMessages] = useState<Message[]>([
         {
             id: "welcome",
             sender: "ai",
-            text: `Hello! How can I help you with course details or questions regarding subject ${subjectId}?`,
+            text: `Hello! How can I help you with course details or questions regarding subject ${courseCode}?`,
         },
     ]);
 
@@ -121,7 +135,7 @@ export default function StudentAiChatPage() {
                         <ArrowLeft className="h-4 w-4" /> Back to Subjects
                     </button>
                     <h1 className="text-2xl font-bold uppercase">
-                        AI Chat For Subject : {subjectId}
+                        AI Chat For Subject : {courseCode}
                     </h1>
                 </div>
             </div>
@@ -148,12 +162,12 @@ export default function StudentAiChatPage() {
                         </div>
 
                         <div
-                            className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm ${msg.sender === "user"
+                            className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm whitespace-pre-wrap leading-relaxed ${msg.sender === "user"
                                     ? "bg-primary text-primary-foreground rounded-tr-none"
                                     : "bg-muted text-foreground rounded-tl-none"
                                 }`}
                         >
-                            {msg.text}
+                            {renderMessage(msg.text)}
                         </div>
                     </div>
                 ))}
@@ -176,7 +190,7 @@ export default function StudentAiChatPage() {
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder={`Ask AI a question about course ${subjectId}...`}
+                    placeholder={`Ask AI a question about course ${courseCode}...`}
                     disabled={isLoading}
                     className="flex-1 px-4 py-2 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
                 />
