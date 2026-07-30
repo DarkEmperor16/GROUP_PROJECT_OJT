@@ -13,8 +13,10 @@ services:
       - PORT=3000
       - NODE_ENV=production
       - AI_SERVICE_URL=http://ai:8000
-    # env_file:
-    #   - ./BE/.env
+    env_file:
+      - ./BE/.env
+    volumes:
+      - backend_uploads:/app/uploads
 
   ai:
     build:
@@ -29,6 +31,8 @@ services:
     volumes:
       - ./BE/.env:/app/BE/.env:ro
       - ./AI/backend/data:/app/AI/backend/data
+      # CHIA SẺ KÉT SẮT: Giúp AI đọc được file PDF từ Backend
+      - backend_uploads:/app/uploads
 
   frontend:
     build:
@@ -41,3 +45,16 @@ services:
     depends_on:
       - backend
       - ai
+
+  mongodb:
+    image: mongo:latest
+    container_name: ojt_mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+volumes:
+  mongodb_data:
+  backend_uploads:
