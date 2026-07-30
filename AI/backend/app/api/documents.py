@@ -251,7 +251,7 @@ async def ingest_folder_from_path(request: FolderIngestRequest, background_tasks
     }
 
 @router.post("/index")
-def index_document(request: dict, background_tasks: BackgroundTasks):
+async def index_document(request: dict, background_tasks: BackgroundTasks):
     """
     Endpoint nhận yêu cầu index từ BE Node.js.
     """

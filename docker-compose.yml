@@ -12,8 +12,23 @@ services:
     environment:
       - PORT=3000
       - NODE_ENV=production
+      - AI_SERVICE_URL=http://ai:8000
     # env_file:
     #   - ./BE/.env
+
+  ai:
+    build:
+      context: ./AI
+      dockerfile: Dockerfile
+    container_name: ojt_ai
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - BE_SERVICE_URL=http://backend:3000
+    volumes:
+      - ./BE/.env:/app/BE/.env:ro
+      - ./AI/backend/data:/app/AI/backend/data
 
   frontend:
     build:
@@ -25,3 +40,4 @@ services:
       - "80:80"
     depends_on:
       - backend
+      - ai
