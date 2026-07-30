@@ -1,28 +1,33 @@
-import { useMutation } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { parseAuthSecurityError } from "@/features/auth/security/parseAuthError";
 import { twoFactorService } from "@/features/auth/security/services";
 import type { TwoFactorVerifyRequest } from "@/features/auth/security/types";
-import { useAuthStore } from "@/features/auth/store";
 import { ROLE_HOME_PATH } from "@/features/auth/types";
-import { prefetchRoleRoutes } from "@/features/auth/utils/prefetchRoutes";
+import { syncAuthSession } from "@/features/auth/utils/syncSession";
 
 export function useTwoFactorVerifyMutation() {
   const navigate = useNavigate();
-  const setAuth = useAuthStore((state) => state.setAuth);
+  const location = useLocation();
+  const queryClient = useQueryClient();
+
+  const from =
+    (location.state as { from?: { pathname: string } } | null)?.from
+      ?.pathname ?? null;
 
   return useMutation({
     mutationFn: (request: TwoFactorVerifyRequest) =>
       twoFactorService.verify(request),
     onSuccess: (data) => {
-      setAuth(data.accessToken, data.refreshToken, data.user);
-      prefetchRoleRoutes(data.user.role);
+      syncAuthSession(queryClient, data);
       toast.success("Verification successful");
-      navigate(ROLE_HOME_PATH[data.user.role], { replace: true });
+      navigate(from ?? ROLE_HOME_PATH[data.user.role], { replace: true });
     },
-    onError: () => {
-      toast.error("Invalid verification code", {
-        description: "Please try again or contact your administrator.",
+    onError: (error) => {
+      const parsed = parseAuthSecurityError(error);
+      toast.error(parsed.title, {
+        description: parsed.description,
       });
     },
   });

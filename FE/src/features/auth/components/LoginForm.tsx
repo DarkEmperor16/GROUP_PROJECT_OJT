@@ -169,9 +169,11 @@ export default function LoginForm() {
     },
   });
 
-  const redirectFrom = (
-    location.state as { from?: { pathname: string } } | null
-  )?.from?.pathname;
+  const requiresSignIn =
+    Boolean(
+      (location.state as { from?: { pathname: string } } | null)?.from
+        ?.pathname,
+    );
 
   const handleLogin = (data: LoginSchemaType) => {
     setSecurityAlert(null);
@@ -218,11 +220,10 @@ export default function LoginForm() {
           </div>
 
           <div className="mt-8 rounded-2xl border border-border/60 bg-card/80 p-6 shadow-soft backdrop-blur-sm sm:p-8">
-            {redirectFrom && (
+            {requiresSignIn && (
               <Alert className="mb-6 border-amber-200/80 bg-amber-50 text-amber-900">
                 <AlertDescription>
-                  Please sign in to access{" "}
-                  <span className="font-medium">{redirectFrom}</span>
+                  Please sign in to continue to the page you requested.
                 </AlertDescription>
               </Alert>
             )}
