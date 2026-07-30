@@ -49,7 +49,7 @@ export default function StudentHistoryPage() {
                 }
 
 
-                const response = await fetch("http://localhost:3000/api/student/history", {
+                const response = await fetch("/api/student/history", {
                     method: "GET",
                     headers: {
                         "Content-Type": "application/json",

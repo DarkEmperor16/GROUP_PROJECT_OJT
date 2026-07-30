@@ -12,6 +12,46 @@ PR target: **`dev`** — không merge thẳng `main`
 
 ---
 
+# Deploy Docker (VPS / local production-like)
+
+> **Không có team Docker riêng** — mỗi người tự deploy phần service của mình (BE / FE / AI) theo quy trình chung bên dưới.
+
+Chạy tại **thư mục gốc repo** (có `docker-compose.yml`).
+
+### Trước khi deploy bản mới (bắt buộc)
+
+Tránh conflict container cũ hoặc kẹt cache image khi lên bản mới:
+
+```bash
+# 1. Dọn dẹp sạch sẽ các container cũ và mạng ẩn
+docker-compose down --remove-orphans
+
+# 2. Xóa cache của image cũ
+docker image prune -a -f
+```
+
+### Deploy lại stack
+
+```bash
+# 3. Build và chạy lại (thêm -d nếu chạy nền trên VPS)
+docker-compose up --build
+```
+
+| Service | Container | Port | Owner (tham khảo) |
+|---------|-----------|------|-------------------|
+| `backend` | `ojt_backend` | 3000 | Chinh / BE |
+| `frontend` | `ojt_frontend` | 80 | Quang / FE |
+| `ai` | `ojt_ai` | 8000 | Team AI |
+
+**Lưu ý:**
+
+- Cấu hình nhạy cảm: `BE/.env` — **không commit** lên Git
+- FE build trong Docker dùng `FE/Dockerfile` (Node 20 + Nginx)
+- BE build dùng `BE/Dockerfile` (Node 20 Alpine)
+- Sau deploy: kiểm tra `http://localhost` (FE), `http://localhost:3000` (BE)
+
+---
+
 # Remember: Standard Workflow tránh bị conflict
 
 ## Luôn luôn git pull dev

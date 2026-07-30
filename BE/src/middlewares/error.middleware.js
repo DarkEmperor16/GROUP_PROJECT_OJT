@@ -58,7 +58,8 @@ function errorHandler(err, req, res, next) {
 
   // Custom status code attached to error object
   const statusCode = err.status || err.statusCode || 500;
-  const message = err.message || 'Internal server error';
+  // For 500 Internal Errors, return generic message to prevent leaking internal stack trace or DB details
+  const message = statusCode >= 500 ? 'Internal server error' : (err.message || 'An error occurred');
 
   return res.status(statusCode).json({ message });
 }

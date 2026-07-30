@@ -63,7 +63,8 @@ export default function StudentQuizListPage() {
                     Authorization: `Bearer ${token}`,
                 };
 
-                // 1. Fetch Student Enrolled Courses (#6 in API Docs)
+
+
                 const coursesRes = await fetch("http://localhost:3000/api/student/courses", { method: "GET", headers });
 
                 let studentCourses: Course[] = [];
@@ -88,6 +89,7 @@ export default function StudentQuizListPage() {
                 // 3. Fetch Quizzes
                 const response = await fetch(quizApiUrl, { method: "GET", headers });
 
+
                 if (response.status === 401 || response.status === 403) {
                     throw new Error("Unauthorized access. Please log in again.");
                 }
@@ -101,16 +103,16 @@ export default function StudentQuizListPage() {
 
                 const rawList = Array.isArray(resData.data) ? resData.data : Array.isArray(resData) ? resData : [];
 
-                // 4. Map & Filter Quizzes to enrolled courses only
+
                 const enrolledCourseIds = new Set(studentCourses.map((c) => c._id));
 
                 const formattedQuizzes: QuizSet[] = rawList
                     .filter((item: any) => {
-                        // If selected specific course, backend/frontend filters it
+
                         if (selectedCourseId !== "ALL") return true;
 
-                        // If "ALL" selected, filter to ensure quiz belongs to student's enrolled courses
-                        if (enrolledCourseIds.size === 0) return true; // Fallback if course endpoint returned empty
+
+                        if (enrolledCourseIds.size === 0) return true;
 
                         const itemCourseId = typeof item.courseId === "object" ? item.courseId?._id : item.courseId;
                         return !itemCourseId || enrolledCourseIds.has(itemCourseId);

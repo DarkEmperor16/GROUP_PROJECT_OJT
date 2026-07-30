@@ -13,6 +13,7 @@ hf_cache_dir = os.path.join(base_dir, "AI", "backend", "data", "model_cache")
 os.makedirs(hf_cache_dir, exist_ok=True)
 os.environ["HF_HOME"] = hf_cache_dir
 os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 from app.api import chat_router, quiz_router, documents_router
 

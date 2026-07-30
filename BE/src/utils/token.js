@@ -2,8 +2,13 @@ const jwt = require('jsonwebtoken');
 
 // ── Secrets & Durations ──────────────────────────────────────
 // Tập trung ở 1 file duy nhất, không khai báo lại ở controller/middleware.
-const ACCESS_SECRET = process.env.JWT_SECRET || 'dev_secret_key';
-const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'dev_refresh_secret_key';
+const ACCESS_SECRET = process.env.JWT_SECRET;
+const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
+
+if (!ACCESS_SECRET || !REFRESH_SECRET) {
+  throw new Error('JWT_SECRET and JWT_REFRESH_SECRET must be configured in environment variables.');
+}
+
 const ACCESS_EXPIRES = process.env.ACCESS_TOKEN_EXPIRES_IN || '15m';
 const REFRESH_EXPIRES = process.env.REFRESH_TOKEN_EXPIRES_IN || '7d';
 

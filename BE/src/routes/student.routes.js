@@ -40,9 +40,11 @@ router.get('/questions', getQuestions);
 // GET /api/student/history?page=1&limit=10&courseId=<id>
 router.get('/history', getHistory);
 
+const { aiRateLimiter } = require('../middlewares/rateLimiter.middleware');
+
 // ── AI Chat Proxy ─────────────────────────────────────────────
 // POST /api/student/ask-ai
 // Body: { "courseId": "<id>", "question": "..." }
-router.post('/ask-ai', askAi);
+router.post('/ask-ai', aiRateLimiter, askAi);
 
 module.exports = router;
