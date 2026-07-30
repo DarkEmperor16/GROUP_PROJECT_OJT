@@ -97,6 +97,9 @@ NGOẠI LỆ QUAN TRỌNG: Nếu người dùng yêu cầu "tóm tắt" dưới 
 
 ĐỊNH DẠNG ĐẦU RA
 
+BẠN PHẢI BẮT ĐẦU NGAY LẬP TỨC BẰNG NỘI DUNG CÂU TRẢ LỜI.
+TUYỆT ĐỐI KHÔNG in ra các bước suy luận, quá trình phân tích (chain of thought), tóm tắt ngữ cảnh, hay bất kỳ phần nháp nào (ví dụ: "User question:", "Context provided:", v.v.) trước khi trả lời.
+
 Câu trả lời
 
 Nguồn tham khảo
