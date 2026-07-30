@@ -3,7 +3,6 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const { authenticateToken, authorizeRoles } = require('./src/middlewares/auth.middleware');
-
 const authRoutes = require('./src/routes/auth.routes');
 const studentRoutes = require('./src/routes/student.routes');
 const teacherCourseRoutes = require('./src/routes/teacherCourse.routes');
@@ -18,15 +17,13 @@ const teacherAiChatRoutes = require('./src/routes/teacherAiChat.routes');
 const internalAiRoutes = require('./src/routes/internalAi.routes');
 const aiRoutes = require('./src/routes/ai.routes');
 const adminRoutes = require('./src/routes/admin.routes');
-
 const { errorHandler } = require('./src/middlewares/error.middleware');
 const { connectDB } = require('./src/config/db');
-
 const app = express();
 
 app.use(cors());
-app.use(express.json({ limit: '20kb' }));
-app.use(cookieParser()); // Parse cookies (cần cho refresh token)
+app.use(express.json());
+app.use(cookieParser());
 
 const PORT = process.env.PORT || 3000;
 
@@ -46,8 +43,11 @@ app.use('/api/teacher', teacherQuizRoutes);
 app.use('/api/teacher', teacherProfileRoutes);
 app.use('/api/teacher', teacherAiChatRoutes);
 app.use('/api/internal/ai', internalAiRoutes);
+
 app.use('/api/ai', aiRoutes);
+
 app.use('/api/admin', adminRoutes);
+
 
 app.get('/api/admin/test', authenticateToken, authorizeRoles('ADMIN'), (req, res) => {
   res.json({

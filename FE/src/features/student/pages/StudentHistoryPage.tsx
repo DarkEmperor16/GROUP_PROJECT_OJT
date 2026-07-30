@@ -49,7 +49,7 @@ export default function StudentHistoryPage() {
                 }
 
 
-                const response = await fetch("/api/student/history", {
+                const response = await fetch("http://localhost:3000/api/student/history", {
                     method: "GET",
                     headers: {
                         "Content-Type": "application/json",
@@ -76,27 +76,14 @@ export default function StudentHistoryPage() {
                             : [];
 
 
-                const formattedHistory: HistoryItem[] = rawList.map((item: any, index: number) => {
-                    let cName = "General";
-                    if (item.courseName) cName = item.courseName;
-                    else if (item.subject) cName = item.subject;
-                    else if (item.courseId) {
-                        if (typeof item.courseId === 'object') {
-                            cName = item.courseId.title || item.courseId.code || "General";
-                        } else {
-                            cName = item.courseId;
-                        }
-                    }
-
-                    return {
-                        id: item.id || item._id || index.toString(),
-                        courseId: typeof item.courseId === 'object' ? item.courseId._id : (item.courseId || "General"),
-                        courseName: cName,
-                        question: item.question || item.prompt || "No question text",
-                        answer: item.answer || item.response || item.aiResponse || "",
-                        createdAt: item.createdAt || item.date || item.timestamp,
-                    };
-                });
+                const formattedHistory: HistoryItem[] = rawList.map((item: any, index: number) => ({
+                    id: item.id || item._id || index.toString(),
+                    courseId: item.courseId || item.course || "General",
+                    courseName: item.courseName || item.subject || item.courseId || "General",
+                    question: item.question || item.prompt || "No question text",
+                    answer: item.answer || item.response || item.aiResponse || "",
+                    createdAt: item.createdAt || item.date || item.timestamp,
+                }));
 
                 setHistory(formattedHistory);
             } catch {
@@ -127,7 +114,7 @@ export default function StudentHistoryPage() {
 
             <hr className="border-border" />
 
-            {/* Loading State */}
+
             {isLoading && (
                 <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -135,7 +122,7 @@ export default function StudentHistoryPage() {
                 </div>
             )}
 
-            {/* Empty or Error Fallback State */}
+
             {!isLoading && showEmptyOrError && (
                 <div className="flex flex-col items-center justify-center border border-dashed rounded-xl p-16 text-center bg-muted/10">
                     <div className="p-4 bg-muted rounded-full w-fit text-muted-foreground mb-4">
