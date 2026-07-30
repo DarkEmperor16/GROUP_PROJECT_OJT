@@ -142,6 +142,7 @@ Ngữ cảnh được truy xuất:
             kwargs = {
                 "google_api_key": api_key,
                 "temperature": 0.2,
+                "max_retries": None,
             }
             model_name = os.getenv("GOOGLE_LLM_MODEL")
             if model_name:
