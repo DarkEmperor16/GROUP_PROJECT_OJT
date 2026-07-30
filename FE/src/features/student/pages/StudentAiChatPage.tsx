@@ -73,7 +73,7 @@ export default function StudentAiChatPage() {
             }
 
             // Endpoint #12 from API specs: POST /api/student/ask-ai
-            const response = await fetch("http://localhost:3000/api/student/ask-ai", {
+            const response = await fetch("/api/student/ask-ai", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

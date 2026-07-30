@@ -122,7 +122,7 @@ async function notifyDocumentStatusChange(payload) {
 }
 
 async function proxyRequest(method, path, data = null, params = null) {
-  const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000';
+  const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://127.0.0.1:8000';
   const url = new URL(`${aiServiceUrl.replace(/\/$/, '')}${path}`);
   if (params) {
     Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));

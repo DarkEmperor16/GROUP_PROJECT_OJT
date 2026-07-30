@@ -52,7 +52,7 @@ export default function StudentQuizListPage() {
                 }
 
 
-                const response = await fetch("http://localhost:3000/api/student/quizzes", {
+                const response = await fetch("/api/student/quizzes", {
                     method: "GET",
                     headers: {
                         "Content-Type": "application/json",

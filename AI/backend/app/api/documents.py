@@ -66,7 +66,8 @@ def _notify_be_status(document_id: str, status: str, error_message: str = None):
     if not document_id:
         return
     try:
-        url = f"http://localhost:3000/api/internal/ai/documents/{document_id}/status"
+        be_url = os.environ.get("BE_SERVICE_URL", "http://127.0.0.1:3000")
+        url = f"{be_url}/api/internal/ai/documents/{document_id}/status"
         payload = {"status": status}
         if error_message:
             payload["errorMessage"] = error_message

@@ -57,7 +57,7 @@ export default function StudentQuizWorkspacePage() {
                 }
 
                 // GET /api/student/quizzes/:quizId
-                const response = await fetch(`http://localhost:3000/api/student/quizzes/${quizId}`, {
+                const response = await fetch(`/api/student/quizzes/${quizId}`, {
                     method: "GET",
                     headers: {
                         "Content-Type": "application/json",
@@ -127,7 +127,7 @@ export default function StudentQuizWorkspacePage() {
             console.log("Submitting Quiz Payload:", payload);
 
             // POST /api/student/quizzes/:quizId/submit
-            const response = await fetch(`http://localhost:3000/api/student/quizzes/${quiz._id || quizId}/submit`, {
+            const response = await fetch(`/api/student/quizzes/${quiz._id || quizId}/submit`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
