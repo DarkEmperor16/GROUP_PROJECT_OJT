@@ -140,7 +140,7 @@ Ngữ cảnh được truy xuất:
             print(f"[Key Rotation] Attempt {attempt+1}/{max_retries} | Using Key: {masked_key}")
 
             kwargs = {
-                "google_api_key": api_key,
+                "api_key": api_key,
                 "temperature": 0.2,
             }
             model_name = os.getenv("GOOGLE_LLM_MODEL")
@@ -189,7 +189,10 @@ Ngữ cảnh được truy xuất:
                 if any(x in error_msg for x in ["429", "resource exhausted", "quota", "api key not valid", "400", "503", "unavailable"]):
                     print(f"[Key Rotation] Failed with key {masked_key}. Reason: {error_msg}. Rotating...")
                     if attempt == max_retries - 1:
-                        yield f"Error: All API keys have exceeded their rate limits or quotas."
+                        if "503" in error_msg or "unavailable" in error_msg:
+                            yield "Hệ thống AI của Google hiện đang quá tải (High demand). Vui lòng thử lại sau ít phút nhé!"
+                        else:
+                            yield "Error: All API keys have exceeded their rate limits or quotas."
                     continue
                 else:
                     yield f"Loi sinh cau tra loi: {str(e)}"

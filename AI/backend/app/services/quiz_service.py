@@ -93,7 +93,7 @@ NGỮ CẢNH:
 
             llm = ChatGoogleGenerativeAI(
                 model=os.getenv("GOOGLE_LLM_MODEL"),
-                google_api_key=api_key,
+                api_key=api_key,
                 temperature=0.7
             )
 
