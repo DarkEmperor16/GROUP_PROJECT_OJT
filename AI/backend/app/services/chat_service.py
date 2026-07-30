@@ -139,11 +139,15 @@ Ngữ cảnh được truy xuất:
             masked_key = f"{api_key[:10]}...{api_key[-5:]}" if len(api_key) > 15 else "INVALID_LENGTH"
             print(f"[Key Rotation] Attempt {attempt+1}/{max_retries} | Using Key: {masked_key}")
 
-            llm = ChatGoogleGenerativeAI(
-                model=os.getenv("GOOGLE_LLM_MODEL"),
-                google_api_key=api_key,
-                temperature=0.2,
-            )
+            kwargs = {
+                "google_api_key": api_key,
+                "temperature": 0.2,
+            }
+            model_name = os.getenv("GOOGLE_LLM_MODEL")
+            if model_name:
+                kwargs["model"] = model_name
+
+            llm = ChatGoogleGenerativeAI(**kwargs)
             chain = prompt | llm
 
             try:
