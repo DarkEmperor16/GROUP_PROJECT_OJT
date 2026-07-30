@@ -35,6 +35,13 @@ docker image prune -a -f
 ```bash
 # 3. Build và chạy lại (thêm -d nếu chạy nền trên VPS)
 docker-compose up --build
+
+### Tạo tài khoản đăng nhập mẫu
+
+Sau khi chạy Docker hoặc khi database mới chưa có user, chạy lệnh sau để tạo sẵn 3 tài khoản auth:
+
+```bash
+docker exec -it ojt_backend npm run db:seed:auth
 ```
 
 | Service | Container | Port | Owner (tham khảo) |
