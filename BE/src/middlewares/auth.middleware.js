@@ -36,6 +36,12 @@ async function authenticateToken(req, res, next) {
       });
     }
 
+    if (user.isLocked) {
+      return res.status(403).json({
+        message: 'Account is locked',
+      });
+    }
+
     req.user = user;
     return next();
   } catch (error) {

@@ -20,13 +20,17 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['STUDENT', 'TEACHER', 'ADMIN'],
+      enum: ['STUDENT', 'TEACHER', 'ADMIN', 'SECURITY_ADMIN'],
       default: 'STUDENT',
     },
     status: {
       type: String,
       enum: ['ACTIVE', 'INACTIVE'],
       default: 'ACTIVE',
+    },
+    isLocked: {
+      type: Boolean,
+      default: false,
     },
     userCode: {
       type: String,

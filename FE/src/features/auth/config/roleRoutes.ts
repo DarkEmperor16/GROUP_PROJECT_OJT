@@ -140,6 +140,10 @@ export const ROLE_ROUTE_GROUPS: RoleRouteGroup[] = [
         path: "admin/qa",
         lazy: lazyRoute(() => import("@/features/qa"), "AdminQaHistoryPage"),
       },
+      {
+        path: "admin/roles",
+        lazy: lazyRoute(() => import("@/features/users"), "RoleManagementPage"),
+      },
     ],
   },
 ];

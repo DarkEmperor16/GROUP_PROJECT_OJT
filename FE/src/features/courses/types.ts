@@ -9,6 +9,9 @@ export interface Course {
   teacherName: string;
   status: CourseStatus;
   enrollmentCount?: number;
+  documentCount?: number;
+  quizCount?: number;
+  chatHistoryCount?: number;
   createdAt: string;
   updatedAt: string;
 }
