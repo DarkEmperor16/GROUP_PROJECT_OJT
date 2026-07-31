@@ -1,7 +1,7 @@
 import { useNavigation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
-/** Thanh tiến trình mỏng khi chuyển route — phản hồi tức thì, không chờ chunk. */
+/** Thin progress bar during route transitions — instant feedback without waiting for chunks. */
 export default function RoutePendingBar() {
   const navigation = useNavigation();
   const isPending = navigation.state === "loading";

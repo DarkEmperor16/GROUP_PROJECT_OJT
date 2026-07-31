@@ -16,7 +16,7 @@ function useAuthRedirectPath() {
   );
 }
 
-/** Server state — session user từ /auth/me (kat-minh bài 7). */
+/** Server state — session user from /auth/me. */
 export function useMeQuery() {
   const accessToken = useAuthStore((state) => state.accessToken);
 

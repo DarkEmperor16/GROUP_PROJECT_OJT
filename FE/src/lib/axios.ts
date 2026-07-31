@@ -16,7 +16,7 @@ function shouldSkipTokenRefresh(url?: string): boolean {
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "/api",
-  timeout: 60000, // Tăng timeout lên 60 giây vì các API gọi AI thường mất nhiều thời gian
+  timeout: 60000, // 60s — AI API calls can take longer
   withCredentials: true,
 });
 

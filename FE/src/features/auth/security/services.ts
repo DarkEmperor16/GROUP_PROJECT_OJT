@@ -31,8 +31,8 @@ function normalizeAuditLogResponse(data: unknown): AuditLogListResponse {
 }
 
 /**
- * Đọc audit log qua BE — không ghi DB từ FE.
- * API chưa sẵn sàng: hook dùng `enabled: false` mặc định.
+ * Read audit logs via the backend — FE does not write to the database.
+ * API not ready yet: hook defaults to `enabled: false`.
  */
 export const auditLogService = {
   async list(params?: AuditLogListParams): Promise<AuditLogListResponse> {
@@ -43,7 +43,7 @@ export const auditLogService = {
   },
 };
 
-/** Xác thực OTP bước 2 — chờ BE Chinh. */
+/** Step-2 OTP verification — pending backend API. */
 export const twoFactorService = {
   async verify(request: TwoFactorVerifyRequest): Promise<LoginResponse> {
     const data = (await apiClient.post(

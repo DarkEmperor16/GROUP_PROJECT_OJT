@@ -7,9 +7,9 @@ export interface RoleNavItem {
 }
 
 /**
- * Menu header — chỉ route đã có trong roleRoutes.ts.
- * Student paths: page của Vũ, Quang chỉ wire nav ở MainLayout.
- * Teacher/Admin: Long / Quốc Anh thêm item khi có page mới.
+ * Header nav — only routes defined in roleRoutes.ts.
+ * Student paths: owned by the student feature; nav is wired in MainLayout.
+ * Teacher/Admin: teammates add items when new pages ship.
  */
 export const ROLE_NAV_ITEMS: Record<UserRole, RoleNavItem[]> = {
   STUDENT: [

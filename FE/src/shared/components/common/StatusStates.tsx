@@ -16,7 +16,7 @@ export function PageLoader({ className }: { className?: string }) {
   );
 }
 
-/** Nhẹ hơn PageLoader — dùng Suspense fallback để cảm giác chuyển trang nhanh hơn. */
+/** Lighter than PageLoader — Suspense fallback for faster perceived navigation. */
 export function PageSkeleton({ className }: { className?: string }) {
   return (
     <div className={cn("space-y-4 py-4", className)} aria-busy aria-label="Loading page">

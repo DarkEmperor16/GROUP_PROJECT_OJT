@@ -17,8 +17,8 @@ function formatTime(iso: string) {
 }
 
 /**
- * Bảng audit log (read-only) — Admin/Security dùng khi BE có API.
- * Quốc Anh có thể nhúng vào Admin dashboard sau.
+ * Read-only audit log table — for Admin/Security when the backend API is ready.
+ * Can be embedded in the admin dashboard later.
  */
 export default function AuditLogTable({
   items,

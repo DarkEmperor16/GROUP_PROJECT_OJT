@@ -1,4 +1,4 @@
-/** Auth security error codes — contract với BE (Chinh). */
+/** Auth security error codes — backend contract. */
 export const AUTH_SECURITY_ERROR_CODES = {
   ACCOUNT_LOCKED: "ACCOUNT_LOCKED",
   TWO_FACTOR_REQUIRED: "TWO_FACTOR_REQUIRED",
@@ -9,11 +9,11 @@ export const AUTH_SECURITY_ERROR_CODES = {
 export type AuthSecurityErrorCode =
   (typeof AUTH_SECURITY_ERROR_CODES)[keyof typeof AUTH_SECURITY_ERROR_CODES];
 
-/** API endpoints — chờ BE implement. FE chỉ gọi đọc, không ghi DB. */
+/** API endpoints — pending backend implementation. FE is read-only. */
 export const AUTH_SECURITY_ENDPOINTS = {
-  /** Danh sách audit log (Admin / Security) */
+  /** Audit log list (Admin / Security) */
   AUDIT_LOGS: "/admin/audit-logs",
-  /** Xác thực OTP bước 2 sau login */
+  /** Step-2 OTP verification after login */
   TWO_FACTOR_VERIFY: "/auth/2fa/verify",
 } as const;
 
