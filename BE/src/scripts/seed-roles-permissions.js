@@ -13,7 +13,11 @@ const defaultPermissions = [
   { name: 'users:update', description: 'Edit user information', module: 'User Management' },
   { name: 'users:lock', description: 'Lock/Unlock user accounts', module: 'User Management' },
   { name: 'users:delete', description: 'Soft delete user accounts', module: 'User Management' },
-  { name: 'users:restore', description: 'Restore soft-deleted user accounts', module: 'User Management' },
+  {
+    name: 'users:restore',
+    description: 'Restore soft-deleted user accounts',
+    module: 'User Management',
+  },
   { name: 'users:reset-password', description: 'Reset user passwords', module: 'User Management' },
   { name: 'users:assign-role', description: 'Assign roles to users', module: 'User Management' },
 
@@ -22,8 +26,16 @@ const defaultPermissions = [
   { name: 'roles:create', description: 'Create system roles', module: 'Role Management' },
   { name: 'roles:update', description: 'Update role details', module: 'Role Management' },
   { name: 'roles:delete', description: 'Delete unused roles', module: 'Role Management' },
-  { name: 'roles:assign-permissions', description: 'Assign permissions to roles', module: 'Role Management' },
-  { name: 'permissions:read', description: 'View available permissions', module: 'Role Management' },
+  {
+    name: 'roles:assign-permissions',
+    description: 'Assign permissions to roles',
+    module: 'Role Management',
+  },
+  {
+    name: 'permissions:read',
+    description: 'View available permissions',
+    module: 'Role Management',
+  },
 ];
 
 async function seedRolesPermissions() {
@@ -38,7 +50,7 @@ async function seedRolesPermissions() {
       const doc = await Permission.findOneAndUpdate(
         { name: p.name },
         { $set: p },
-        { upsert: true, new: true }
+        { upsert: true, new: true },
       );
       dbPermissions.push(doc);
     }
@@ -46,38 +58,18 @@ async function seedRolesPermissions() {
 
     // Map permissions by name for easier lookup
     const permMap = {};
-    dbPermissions.forEach(p => {
+    dbPermissions.forEach((p) => {
       permMap[p.name] = p._id;
     });
 
     // 2. Define Roles and assign permission references
-    const adminPermissions = dbPermissions.map(p => p._id);
-    
-    // Security Admin has access to all user management and role/permission management,
-    // except for hard administrative capabilities if defined, but gets most permissions.
-    const securityAdminPermissions = [
-      permMap['users:read'],
-      permMap['users:update'],
-      permMap['users:delete'],
-      permMap['users:lock'],
-      permMap['users:restore'],
-      permMap['users:reset-password'],
-      permMap['users:assign-role'],
-      permMap['roles:read'],
-      permMap['roles:assign-permissions'],
-      permMap['permissions:read'],
-    ].filter(Boolean);
+    const adminPermissions = dbPermissions.map((p) => p._id);
 
     const rolesToSeed = [
       {
         name: 'ADMIN',
         description: 'System Administrator - Full Access',
         permissions: adminPermissions,
-      },
-      {
-        name: 'SECURITY_ADMIN',
-        description: 'Security Administrator - Manage Users and Role Assignments',
-        permissions: securityAdminPermissions,
       },
       {
         name: 'TEACHER',
@@ -93,11 +85,7 @@ async function seedRolesPermissions() {
 
     console.log('Seeding roles...');
     for (const r of rolesToSeed) {
-      await Role.findOneAndUpdate(
-        { name: r.name },
-        { $set: r },
-        { upsert: true, new: true }
-      );
+      await Role.findOneAndUpdate({ name: r.name }, { $set: r }, { upsert: true, new: true });
       console.log(`Seeded role: ${r.name}`);
     }
 
@@ -110,11 +98,6 @@ async function seedRolesPermissions() {
         fullName: 'Admin User',
         email: 'admin@academy.edu',
         role: 'ADMIN',
-      },
-      {
-        fullName: 'Security Admin User',
-        email: 'security@academy.edu',
-        role: 'SECURITY_ADMIN',
       },
       {
         fullName: 'Teacher User',
@@ -141,7 +124,7 @@ async function seedRolesPermissions() {
             isLocked: false,
           },
         },
-        { upsert: true, new: true }
+        { upsert: true, new: true },
       );
       console.log(`Seeded user ${user.role}: ${user.email} (Password: 123456)`);
     }

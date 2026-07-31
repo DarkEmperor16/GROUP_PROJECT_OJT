@@ -21,12 +21,8 @@ const roleConfig: Record<
   ADMIN: {
     label: "Admin",
     icon: Shield,
-    className: "border-violet-200/80 bg-violet-50 text-violet-800 dark:border-violet-800/50 dark:bg-violet-950/40 dark:text-violet-300",
-  },
-  SECURITY_ADMIN: {
-    label: "Security Admin",
-    icon: ShieldCheck,
-    className: "border-rose-200/80 bg-rose-50 text-rose-800 dark:border-rose-800/50 dark:bg-rose-950/40 dark:text-rose-300",
+    className:
+      "border-violet-200/80 bg-violet-50 text-violet-800 dark:border-violet-800/50 dark:bg-violet-950/40 dark:text-violet-300",
   },
 };
 

@@ -34,7 +34,8 @@ function buildDocumentResponse(document) {
     courseName: course?.title || course?.name || '',
     version: document.version,
     description: document.description,
-    uploadedBy: uploadedBy?.email || uploadedBy?.fullName || document.uploadedBy?.toString?.() || '',
+    uploadedBy:
+      uploadedBy?.email || uploadedBy?.fullName || document.uploadedBy?.toString?.() || '',
     uploadedAt: document.createdAt,
     isActive: document.status === 'active',
     fileType,
@@ -147,7 +148,9 @@ async function createUser(req, res) {
     const createdUser = await User.create({
       fullName: String(fullName).trim(),
       email: normalizedEmail,
-      userCode: String(userCode || normalizedEmail.split('@')[0] || '').trim().toUpperCase(),
+      userCode: String(userCode || normalizedEmail.split('@')[0] || '')
+        .trim()
+        .toUpperCase(),
       passwordHash: await bcrypt.hash(String(password), 10),
       role: role || 'STUDENT',
       status: status || 'ACTIVE',
@@ -257,7 +260,9 @@ async function listDocuments(req, res) {
     }
 
     if (uploadedBy) {
-      const uploadedByUser = await User.findOne({ email: { $regex: uploadedBy, $options: 'i' } }).select('_id');
+      const uploadedByUser = await User.findOne({
+        email: { $regex: uploadedBy, $options: 'i' },
+      }).select('_id');
       if (uploadedByUser) {
         filter.uploadedBy = uploadedByUser._id;
       } else {
@@ -311,7 +316,9 @@ async function createDocument(req, res) {
       status: 'active',
     });
 
-    const populated = await CourseDocument.findById(document._id).populate('courseId', 'courseCode title name').populate('uploadedBy', 'email fullName');
+    const populated = await CourseDocument.findById(document._id)
+      .populate('courseId', 'courseCode title name')
+      .populate('uploadedBy', 'email fullName');
 
     return res.status(201).json({
       data: buildDocumentResponse(populated),
@@ -339,7 +346,9 @@ async function updateDocumentStatus(req, res) {
     document.status = document.status === 'active' ? 'inactive' : 'active';
     await document.save();
 
-    const populated = await CourseDocument.findById(document._id).populate('courseId', 'courseCode title name').populate('uploadedBy', 'email fullName');
+    const populated = await CourseDocument.findById(document._id)
+      .populate('courseId', 'courseCode title name')
+      .populate('uploadedBy', 'email fullName');
 
     return res.json({
       data: buildDocumentResponse(populated),
@@ -538,10 +547,7 @@ async function listCourses(req, res) {
     }
 
     const [courses, total] = await Promise.all([
-      Course.find(filter)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit),
+      Course.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
       Course.countDocuments(filter),
     ]);
 
@@ -550,31 +556,32 @@ async function listCourses(req, res) {
     const QaRecord = require('../models/QaRecord');
     const data = await Promise.all(
       courses.map(async (course) => {
-        const [enrollmentCount, documentCount, quizCount, qaHistoryCount, qaRecordCount] = await Promise.all([
-          Enrollment.countDocuments({
-            courseId: course._id,
-            status: 'ACTIVE',
-          }),
-          CourseDocument.countDocuments({
-            courseId: course._id,
-          }),
-          Quiz.countDocuments({
-            courseId: course._id,
-          }),
-          QaHistory.countDocuments({
-            courseId: course._id,
-          }),
-          QaRecord.countDocuments({
-            courseId: course._id,
-          }),
-        ]);
+        const [enrollmentCount, documentCount, quizCount, qaHistoryCount, qaRecordCount] =
+          await Promise.all([
+            Enrollment.countDocuments({
+              courseId: course._id,
+              status: 'ACTIVE',
+            }),
+            CourseDocument.countDocuments({
+              courseId: course._id,
+            }),
+            Quiz.countDocuments({
+              courseId: course._id,
+            }),
+            QaHistory.countDocuments({
+              courseId: course._id,
+            }),
+            QaRecord.countDocuments({
+              courseId: course._id,
+            }),
+          ]);
         const mapped = buildCourseResponse(course);
         mapped.enrollmentCount = enrollmentCount;
         mapped.documentCount = documentCount;
         mapped.quizCount = quizCount;
         mapped.chatHistoryCount = qaHistoryCount + qaRecordCount;
         return mapped;
-      })
+      }),
     );
 
     return res.json({
@@ -597,7 +604,9 @@ async function createCourse(req, res) {
     const courseName = req.body.courseName || req.body.name || req.body.title || '';
     const courseCode = req.body.courseCode || req.body.code || '';
     const description = req.body.description || '';
-    const teacherId = req.body.teacherId || (Array.isArray(req.body.teacherIds) ? req.body.teacherIds[0] : req.body.teacherIds);
+    const teacherId =
+      req.body.teacherId ||
+      (Array.isArray(req.body.teacherIds) ? req.body.teacherIds[0] : req.body.teacherIds);
     const teacherIds = Array.isArray(req.body.teacherIds)
       ? req.body.teacherIds
       : teacherId
@@ -668,7 +677,11 @@ async function updateCourse(req, res) {
 
     const updatePayload = {};
 
-    if (req.body.courseName !== undefined || req.body.name !== undefined || req.body.title !== undefined) {
+    if (
+      req.body.courseName !== undefined ||
+      req.body.name !== undefined ||
+      req.body.title !== undefined
+    ) {
       const courseName = req.body.courseName || req.body.name || req.body.title || '';
       updatePayload.name = courseName.trim();
       updatePayload.title = courseName.trim();
@@ -683,7 +696,9 @@ async function updateCourse(req, res) {
     }
 
     if (req.body.teacherId !== undefined || req.body.teacherIds !== undefined) {
-      const teacherId = req.body.teacherId || (Array.isArray(req.body.teacherIds) ? req.body.teacherIds[0] : req.body.teacherIds);
+      const teacherId =
+        req.body.teacherId ||
+        (Array.isArray(req.body.teacherIds) ? req.body.teacherIds[0] : req.body.teacherIds);
       const teacherIds = Array.isArray(req.body.teacherIds)
         ? req.body.teacherIds
         : teacherId
@@ -729,7 +744,7 @@ async function deleteCourse(req, res) {
     const hasStudents = await Enrollment.exists({ courseId: id, status: 'ACTIVE' });
     if (hasStudents) {
       return res.status(400).json({
-        message: 'Course can be deleted only when it has no students.'
+        message: 'Course can be deleted only when it has no students.',
       });
     }
 
@@ -737,7 +752,7 @@ async function deleteCourse(req, res) {
     const hasAiIndex = await CourseDocument.exists({ courseId: id });
     if (hasAiIndex) {
       return res.status(400).json({
-        message: 'Course can be deleted only when it has no AI index.'
+        message: 'Course can be deleted only when it has no AI index.',
       });
     }
 
@@ -745,18 +760,18 @@ async function deleteCourse(req, res) {
     const hasQuiz = await Quiz.exists({ courseId: id });
     if (hasQuiz) {
       return res.status(400).json({
-        message: 'Course can be deleted only when it has no quiz.'
+        message: 'Course can be deleted only when it has no quiz.',
       });
     }
 
     // BR-005: Course can be deleted only when it has no chat history.
     const [hasQaHistory, hasQaRecord] = await Promise.all([
       QaHistory.exists({ courseId: id }),
-      QaRecord.exists({ courseId: id })
+      QaRecord.exists({ courseId: id }),
     ]);
     if (hasQaHistory || hasQaRecord) {
       return res.status(400).json({
-        message: 'Course can be deleted only when it has no chat history.'
+        message: 'Course can be deleted only when it has no chat history.',
       });
     }
 
@@ -1014,7 +1029,9 @@ async function deleteRole(req, res) {
     // BR-ROLE-03: Cannot delete role that is currently assigned to users
     const userCount = await User.countDocuments({ role: role.name });
     if (userCount > 0) {
-      return res.status(400).json({ message: 'Cannot delete role that is currently assigned to users' });
+      return res
+        .status(400)
+        .json({ message: 'Cannot delete role that is currently assigned to users' });
     }
     await Role.findByIdAndDelete(id);
     return res.json({ message: 'Role deleted successfully' });
@@ -1045,16 +1062,14 @@ async function assignPermissionsToRole(req, res) {
     if (!role) {
       return res.status(404).json({ message: 'Role not found' });
     }
-    // BR-ROLE-04: Security Admin cannot modify ADMIN permissions
-    if (role.name === 'ADMIN' && req.user.role === 'SECURITY_ADMIN') {
-      return res.status(403).json({ message: 'Security Admin is not allowed to modify permissions of the ADMIN role' });
-    }
     role.permissions = permissions || [];
     await role.save();
     const populated = await Role.findById(role._id).populate('permissions');
     return res.json({ data: populated });
   } catch (error) {
-    return res.status(500).json({ message: error.message || 'Failed to assign permissions to role' });
+    return res
+      .status(500)
+      .json({ message: error.message || 'Failed to assign permissions to role' });
   }
 }
 
@@ -1092,7 +1107,9 @@ async function getCourseEnrollments(req, res) {
     }
 
     const Enrollment = require('../models/Enrollment');
-    const enrollments = await Enrollment.find({ courseId: id, status: 'ACTIVE' }).populate('studentId');
+    const enrollments = await Enrollment.find({ courseId: id, status: 'ACTIVE' }).populate(
+      'studentId',
+    );
 
     const mapped = enrollments.map((e) => ({
       id: e._id.toString(),
@@ -1126,10 +1143,10 @@ async function saveCourseEnrollments(req, res) {
 
     // Find current active enrollments
     const currentActive = await Enrollment.find({ courseId: id, status: 'ACTIVE' });
-    const currentActiveIds = currentActive.map(e => e.studentId.toString());
+    const currentActiveIds = currentActive.map((e) => e.studentId.toString());
 
     // IDs to drop: currently active but not in new list
-    const toDrop = currentActiveIds.filter(sid => !studentIds.includes(sid));
+    const toDrop = currentActiveIds.filter((sid) => !studentIds.includes(sid));
 
     // IDs to add or reactivate: in new list
     const toEnroll = studentIds;
@@ -1138,14 +1155,14 @@ async function saveCourseEnrollments(req, res) {
     if (toDrop.length > 0) {
       await Enrollment.updateMany(
         { courseId: id, studentId: { $in: toDrop } },
-        { $set: { status: 'DROPPED' } }
+        { $set: { status: 'DROPPED' } },
       );
     }
 
     // Process enrollments for new/reactivated
     for (const studentId of toEnroll) {
       if (!mongoose.Types.ObjectId.isValid(studentId)) continue;
-      
+
       const existing = await Enrollment.findOne({ courseId: id, studentId });
       if (existing) {
         if (existing.status !== 'ACTIVE') {
@@ -1162,7 +1179,9 @@ async function saveCourseEnrollments(req, res) {
     }
 
     // Fetch updated list of active enrollments
-    const enrollments = await Enrollment.find({ courseId: id, status: 'ACTIVE' }).populate('studentId');
+    const enrollments = await Enrollment.find({ courseId: id, status: 'ACTIVE' }).populate(
+      'studentId',
+    );
 
     const mapped = enrollments.map((e) => ({
       id: e._id.toString(),
@@ -1194,7 +1213,10 @@ async function getStudentEnrollments(req, res) {
       return res.status(404).json({ message: 'Student not found' });
     }
 
-    const enrollments = await Enrollment.find({ studentId: student._id, status: 'ACTIVE' }).populate('studentId');
+    const enrollments = await Enrollment.find({
+      studentId: student._id,
+      status: 'ACTIVE',
+    }).populate('studentId');
 
     const mapped = enrollments.map((e) => ({
       id: e._id.toString(),
@@ -1207,7 +1229,9 @@ async function getStudentEnrollments(req, res) {
 
     return res.json({ data: mapped });
   } catch (error) {
-    return res.status(500).json({ message: error.message || 'Failed to retrieve student enrollments' });
+    return res
+      .status(500)
+      .json({ message: error.message || 'Failed to retrieve student enrollments' });
   }
 }
 

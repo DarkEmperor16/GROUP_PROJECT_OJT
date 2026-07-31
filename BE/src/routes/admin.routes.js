@@ -37,15 +37,12 @@ const {
   updateCourseStatus,
 } = require('../controllers/admin.controller');
 
-const {
-  authenticateToken,
-  authorizeRoles,
-} = require('../middlewares/auth.middleware');
+const { authenticateToken, authorizeRoles } = require('../middlewares/auth.middleware');
 
 const router = express.Router();
 
-// Allow both ADMIN and SECURITY_ADMIN roles to hit the admin routes
-router.use(authenticateToken, authorizeRoles('ADMIN', 'SECURITY_ADMIN'));
+// Allow ADMIN roles to access the admin routes
+router.use(authenticateToken, authorizeRoles('ADMIN'));
 
 // User Management
 router.get('/users', listUsers);
@@ -94,4 +91,3 @@ router.get('/dashboard/logs', listDashboardLogs);
 router.get('/audit-logs', listAuditLogs);
 
 module.exports = router;
-
