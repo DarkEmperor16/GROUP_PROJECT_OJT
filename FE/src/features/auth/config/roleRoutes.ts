@@ -13,10 +13,10 @@ export interface RoleRouteGroup {
 }
 
 /**
- * Dynamic routing theo role — thêm route mới chỉ cần sửa config này.
- * Lazy import giữ bundle nhỏ (chỉ tải page khi user vào đúng role).
+ * Role-based dynamic routing — add new routes by editing this config.
+ * Lazy imports keep the bundle small (pages load only for the active role).
  *
- * Teacher/Admin sub-routes: Long / Quốc Anh thêm vào đây khi có page.
+ * Teacher/Admin sub-routes: teammates add entries here when pages are ready.
  */
 export const ROLE_ROUTE_GROUPS: RoleRouteGroup[] = [
   {

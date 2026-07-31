@@ -30,7 +30,7 @@ interface TwoFactorFormProps {
   onBack: () => void;
 }
 
-/** Bước 2FA sau login — hiện khi BE trả TWO_FACTOR_REQUIRED. */
+/** 2FA step after login — shown when backend returns TWO_FACTOR_REQUIRED. */
 export default function TwoFactorForm({ challenge, onBack }: TwoFactorFormProps) {
   const verifyMutation = useTwoFactorVerifyMutation();
 

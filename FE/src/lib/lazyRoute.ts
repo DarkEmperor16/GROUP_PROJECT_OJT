@@ -3,7 +3,7 @@ import type { ComponentType } from "react";
 type ModuleWithExports = Record<string, unknown>;
 
 /**
- * Helper for React Router `lazy` routes — code-split theo từng page.
+ * Helper for React Router `lazy` routes — code-split per page.
  * @example lazyRoute(() => import("@/features/auth"), "LoginPage")
  */
 export function lazyRoute<M extends ModuleWithExports, K extends keyof M>(

@@ -28,7 +28,7 @@ export interface AuditLogListResponse {
   limit: number;
 }
 
-/** BE trả khi admin cần nhập OTP (chưa có API). */
+/** Returned when admin must enter OTP (API not yet available). */
 export interface TwoFactorChallenge {
   challengeToken: string;
   email: string;

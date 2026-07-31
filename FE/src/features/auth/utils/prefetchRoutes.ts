@@ -15,11 +15,11 @@ function scheduleIdle(task: () => void) {
 }
 
 interface PrefetchOptions {
-  /** Tải chunk ngay — dùng sau login / hover nav */
+  /** Load chunk immediately — use after login or nav hover */
   eager?: boolean;
 }
 
-/** Preload JS chunk theo role — giảm delay lần đầu vào workspace. */
+/** Preload JS chunks by role — reduces first-visit delay to the workspace. */
 export function prefetchRoleRoutes(role: UserRole, options?: PrefetchOptions) {
   const load = ROLE_MODULE_LOADERS[role];
   if (!load) return;

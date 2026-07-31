@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-/** Reusable Zod rules — dùng chung cho mọi form auth. */
+/** Reusable Zod rules — shared across auth forms. */
 export const emailRule = z
   .string()
   .trim()

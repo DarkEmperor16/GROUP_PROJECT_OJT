@@ -4,7 +4,7 @@ import { AUTH_SECURITY_ERROR_CODES } from "@/features/auth/security/constants";
 const DEFAULT_LOGIN_ERROR =
   "Invalid credentials or server unavailable. Please try again.";
 
-/** Không hiển thị path file, URL API, stack trace cho user. */
+/** Do not expose file paths, API URLs, or stack traces to users. */
 const TECHNICAL_MESSAGE_PATTERN =
   /(?:[A-Za-z]:\\|\/(?:src|api|features|node_modules|@)\/|\.tsx\b|\.jsx\b|\.ts\b|\.js\b|Cannot\s+(?:GET|POST|PUT|DELETE|PATCH)\s+|ECONNREFUSED|ERR_|\/api\/|https?:\/\/|Invalid login response from server)/i;
 
@@ -53,7 +53,7 @@ function toUserFacingMessage(raw: string | undefined): string | undefined {
   return raw;
 }
 
-/** Map lỗi BE → message hiển thị trên login (khóa tài khoản, 2FA, …). */
+/** Map backend errors to user-facing login messages (lockout, 2FA, etc.). */
 export function parseAuthSecurityError(error: unknown): AuthSecurityAlert {
   const body = getErrorBody(error);
   const code = body?.code;
