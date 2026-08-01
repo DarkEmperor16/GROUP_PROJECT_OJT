@@ -9,6 +9,7 @@ export interface ManagedUser {
   userCode: string;
   role: UserRole;
   status: UserStatus;
+  isLocked?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -46,4 +47,22 @@ export interface UpdateUserPayload {
   userCode: string;
   role: UserRole;
   status: UserStatus;
+}
+
+export interface SystemPermission {
+  _id: string;
+  name: string;
+  description: string;
+  module: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SystemRole {
+  _id: string;
+  name: string;
+  description: string;
+  permissions: SystemPermission[] | string[];
+  createdAt: string;
+  updatedAt: string;
 }

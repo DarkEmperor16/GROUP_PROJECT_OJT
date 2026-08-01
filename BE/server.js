@@ -48,6 +48,7 @@ app.use('/api/teacher', teacherAiChatRoutes);
 app.use('/api/internal/ai', internalAiRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/v1/admin', adminRoutes);
 
 app.get('/api/admin/test', authenticateToken, authorizeRoles('ADMIN'), (req, res) => {
   res.json({

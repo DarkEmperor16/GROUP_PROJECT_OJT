@@ -76,19 +76,18 @@ export default function CourseManagementPage() {
     setSelectedCourse(null);
   };
 
-  const handleCreate = (data: CreateCourseSchemaType) => {
-    createMutation.mutate(data, {
-      onSuccess: () => closeDialog(),
-    });
+  const handleCreate = async (data: CreateCourseSchemaType) => {
+    await createMutation.mutateAsync(data);
+    closeDialog();
   };
 
-  const handleUpdate = (data: UpdateCourseSchemaType) => {
+  const handleUpdate = async (data: UpdateCourseSchemaType) => {
     if (!selectedCourse) return;
 
-    updateMutation.mutate(
-      { id: selectedCourse.id, payload: data },
-      { onSuccess: () => closeDialog() },
+    await updateMutation.mutateAsync(
+      { id: selectedCourse.id, payload: data }
     );
+    closeDialog();
   };
 
   const handleToggleStatus = (course: Course) => {
