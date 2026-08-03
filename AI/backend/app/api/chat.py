@@ -19,6 +19,7 @@ class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1)
     subject: Optional[str] = ""
     history: Optional[List[dict]] = []
+    user_id: Optional[str] = ""
     k: int = Field(default=4, ge=1, le=10)
 
 
@@ -96,7 +97,7 @@ async def chat_completions(request: ChatRequest):
         raise HTTPException(status_code=400, detail="Message is required.")
 
     if is_prompt_injection(clean_message):
-        blocked_answer = "He thong phat hien noi dung khong an toan va tu choi xu ly."
+        blocked_answer = "Hệ thống phát hiện nội dung không an toàn và từ chối xử lý."
 
         def blocked_generator():
             yield _sse("blocked_by_guardrail", event="status")
