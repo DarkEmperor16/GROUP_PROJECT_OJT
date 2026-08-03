@@ -30,7 +30,7 @@ class ChatService:
         The prompt keeps the answer grounded, cites sources, and uses a stable
         suggestion section so the API can extract clickable follow-up questions.
         """
-        if not api_key_manager.get_next_key():
+        if api_key_manager.num_keys() == 0:
             yield "Error: GOOGLE_API_KEYS is not configured for the AI model."
             return
 
@@ -136,11 +136,10 @@ Ngữ cảnh được truy xuất:
 
         max_retries = max(1, api_key_manager.num_keys())
         for attempt in range(max_retries):
-            api_key = api_key_manager.get_next_key()
+            api_key, key_index = api_key_manager.get_next_key_info()
             
             # Print to terminal for testing/debugging
-            masked_key = f"{api_key[:10]}...{api_key[-5:]}" if len(api_key) > 15 else "INVALID_LENGTH"
-            print(f"[Key Rotation] Attempt {attempt+1}/{max_retries} | Using Key: {masked_key}")
+            print(f"[Key Rotation] Attempt {attempt+1}/{max_retries} | Using Key #{key_index}")
 
             kwargs = {
                 "api_key": api_key,
@@ -190,7 +189,7 @@ Ngữ cảnh được truy xuất:
                 error_msg = str(e).lower()
                 # Catch rate limits, quota, invalid keys, and 503 UNAVAILABLE (for testing)
                 if any(x in error_msg for x in ["429", "resource exhausted", "quota", "api key not valid", "400", "503", "unavailable"]):
-                    print(f"[Key Rotation] Failed with key {masked_key}. Reason: {error_msg}. Rotating...")
+                    print(f"[Key Rotation] Failed with Key #{key_index}. Reason: {error_msg}. Rotating...")
                     if attempt == max_retries - 1:
                         if "503" in error_msg or "unavailable" in error_msg:
                             yield "Hệ thống AI của Google hiện đang quá tải (High demand). Vui lòng thử lại sau ít phút nhé!"
