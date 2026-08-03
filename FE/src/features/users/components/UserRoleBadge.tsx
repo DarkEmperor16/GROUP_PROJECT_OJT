@@ -1,4 +1,4 @@
-import { GraduationCap, Shield, ShieldCheck, UserCog } from "lucide-react";
+import { GraduationCap, Shield, UserCog } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/features/auth/types";
 
