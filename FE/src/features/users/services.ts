@@ -108,6 +108,84 @@ export const userService = {
 
     return normalizeUserResponse(data);
   },
+
+  async lock(id: string): Promise<ManagedUser> {
+    const data = (await apiClient.patch(
+      API_ENDPOINTS.USERS.LOCK(id),
+    )) as BackendUserResult;
+
+    return normalizeUserResponse(data);
+  },
+
+  async unlock(id: string): Promise<ManagedUser> {
+    const data = (await apiClient.patch(
+      API_ENDPOINTS.USERS.UNLOCK(id),
+    )) as BackendUserResult;
+
+    return normalizeUserResponse(data);
+  },
+
+  async delete(id: string): Promise<ManagedUser> {
+    const data = (await apiClient.delete(
+      API_ENDPOINTS.USERS.DELETE(id),
+    )) as BackendUserResult;
+
+    return normalizeUserResponse(data);
+  },
+
+  async restore(id: string): Promise<ManagedUser> {
+    const data = (await apiClient.patch(
+      API_ENDPOINTS.USERS.RESTORE(id),
+    )) as BackendUserResult;
+
+    return normalizeUserResponse(data);
+  },
+
+  async resetPassword(id: string, password: string): Promise<ManagedUser> {
+    const data = (await apiClient.patch(
+      API_ENDPOINTS.USERS.RESET_PASSWORD(id),
+      { password },
+    )) as BackendUserResult;
+
+    return normalizeUserResponse(data);
+  },
+
+  async assignRole(id: string, role: string): Promise<ManagedUser> {
+    const data = (await apiClient.patch(
+      API_ENDPOINTS.USERS.ASSIGN_ROLE(id),
+      { role },
+    )) as BackendUserResult;
+
+    return normalizeUserResponse(data);
+  },
+
+  async listRoles(): Promise<{ data: any[] }> {
+    return apiClient.get(API_ENDPOINTS.ROLES.LIST);
+  },
+
+  async createRole(payload: { name: string; description?: string; permissions?: string[] }): Promise<any> {
+    return apiClient.post(API_ENDPOINTS.ROLES.CREATE, payload);
+  },
+
+  async getRole(id: string): Promise<any> {
+    return apiClient.get(API_ENDPOINTS.ROLES.GET(id));
+  },
+
+  async updateRole(id: string, payload: { name?: string; description?: string }): Promise<any> {
+    return apiClient.put(API_ENDPOINTS.ROLES.UPDATE(id), payload);
+  },
+
+  async deleteRole(id: string): Promise<any> {
+    return apiClient.delete(API_ENDPOINTS.ROLES.DELETE(id));
+  },
+
+  async listPermissions(): Promise<{ data: any[] }> {
+    return apiClient.get(API_ENDPOINTS.PERMISSIONS.LIST);
+  },
+
+  async assignPermissions(roleId: string, permissions: string[]): Promise<any> {
+    return apiClient.put(API_ENDPOINTS.ROLES.ASSIGN_PERMISSIONS(roleId), { permissions });
+  },
 };
 
 export const userQueryKeys = {

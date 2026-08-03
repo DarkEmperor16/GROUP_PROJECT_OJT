@@ -43,9 +43,9 @@ export function useCreateCourseMutation() {
         description: `${course.courseName} (${course.courseCode}) has been successfully created.`,
       });
     },
-    onError: (error: Error) => {
-      toast.error("Failed to create course", {
-        description: error.message || "Please check the form and try again.",
+    onError: (error: any) => {
+      toast.error("Create Failed", {
+        description: error?.response?.data?.message || error.message || "Please check the form and try again.",
       });
     },
   });
@@ -68,9 +68,9 @@ export function useUpdateCourseMutation() {
         description: `${course.courseName} has been successfully updated.`,
       });
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       toast.error("Failed to update course", {
-        description: error.message || "Please check the form and try again.",
+        description: error?.response?.data?.message || error.message || "Please check the form and try again.",
       });
     },
   });
@@ -91,9 +91,9 @@ export function useUpdateCourseStatusMutation() {
         }
       );
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       toast.error("Failed to update status", {
-        description: error.message || "Please try again.",
+        description: error?.response?.data?.message || error.message || "Please try again.",
       });
     },
   });
@@ -110,9 +110,9 @@ export function useDeleteCourseMutation() {
         description: "The course has been permanently removed.",
       });
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       toast.error("Failed to delete course", {
-        description: error.message || "Please try again.",
+        description: error?.response?.data?.message || error.message || "Please try again.",
       });
     },
   });

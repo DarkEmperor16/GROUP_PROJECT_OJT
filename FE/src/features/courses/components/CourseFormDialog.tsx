@@ -29,8 +29,8 @@ interface CourseFormDialogProps {
   course?: Course | null;
   isSubmitting?: boolean;
   onClose: () => void;
-  onCreate: (data: CreateCourseSchemaType) => void;
-  onUpdate: (data: UpdateCourseSchemaType) => void;
+  onCreate: (data: CreateCourseSchemaType) => Promise<void> | void;
+  onUpdate: (data: UpdateCourseSchemaType) => Promise<void> | void;
 }
 
 export default function CourseFormDialog({
@@ -81,6 +81,32 @@ export default function CourseFormDialog({
     }
   }, [open, isEdit, course, form, teachers]);
 
+  const onSubmit = async (values: CreateCourseSchemaType) => {
+    try {
+      if (isEdit) {
+        await onUpdate(values);
+      } else {
+        await onCreate(values);
+      }
+    } catch (error: any) {
+      const message = error?.response?.data?.message || error?.message || "";
+      if (
+        message.toLowerCase().includes("code already exists") ||
+        error?.response?.status === 409
+      ) {
+        form.setError("courseCode", {
+          type: "manual",
+          message: "Mã course code bị trùng",
+        });
+      } else {
+        form.setError("root", {
+          type: "manual",
+          message: message || "Failed to save course. Please try again.",
+        });
+      }
+    }
+  };
+
   if (!open) return null;
 
   const title = isEdit ? "Edit course" : "Create course";
@@ -123,7 +149,7 @@ export default function CourseFormDialog({
 
         <Form {...form}>
           <form
-            onSubmit={form.handleSubmit(isEdit ? onUpdate : onCreate)}
+            onSubmit={form.handleSubmit(onSubmit)}
             className="space-y-4"
           >
             <FormField
@@ -215,6 +241,12 @@ export default function CourseFormDialog({
                 </FormItem>
               )}
             />
+
+            {form.formState.errors.root && (
+              <p className="text-sm font-medium text-destructive animate-in fade-in-50 duration-200">
+                {form.formState.errors.root.message}
+              </p>
+            )}
 
             <div className="flex gap-3 pt-2">
               <Button

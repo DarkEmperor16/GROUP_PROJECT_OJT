@@ -71,7 +71,37 @@ export default function CourseTable({
           <tbody className="divide-y divide-border/50">
             {courses.map((course) => {
               const enrolledCount = course.enrollmentCount ?? 0;
+              const documentCount = course.documentCount ?? 0;
+              const quizCount = course.quizCount ?? 0;
+              const chatHistoryCount = course.chatHistoryCount ?? 0;
+
               const hasEnrollments = enrolledCount > 0;
+              const hasAiIndex = documentCount > 0;
+              const hasQuiz = quizCount > 0;
+              const hasChatHistory = chatHistoryCount > 0;
+              const isInactive = course.status === "INACTIVE";
+
+              const cannotDelete = isInactive || hasEnrollments || hasAiIndex || hasQuiz || hasChatHistory;
+
+              const getDeleteTooltip = () => {
+                const reasons: string[] = [];
+                if (isInactive) {
+                  reasons.push("Cannot delete inactive course.");
+                }
+                if (hasEnrollments) {
+                  reasons.push("BR-001 Course can be deleted only when it has no students.");
+                }
+                if (hasAiIndex) {
+                  reasons.push("BR-003 Course can be deleted only when it has no AI index.");
+                }
+                if (hasQuiz) {
+                  reasons.push("BR-004 Course can be deleted only when it has no quiz.");
+                }
+                if (hasChatHistory) {
+                  reasons.push("BR-005 Course can be deleted only when it has no chat history.");
+                }
+                return reasons.length > 0 ? reasons.join("\n") : "Permanently delete course";
+              };
 
               return (
                 <tr
@@ -116,7 +146,9 @@ export default function CourseTable({
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="gap-1 text-primary hover:text-primary hover:bg-primary/5"
+                          className="gap-1 text-primary hover:text-primary hover:bg-primary/5 disabled:opacity-40 disabled:hover:bg-transparent"
+                          disabled={isInactive}
+                          title={isInactive ? "Cannot enroll students in an inactive course." : undefined}
                           onClick={() => onAssignStudents(course)}
                         >
                           <Users className="h-4 w-4" aria-hidden />
@@ -128,13 +160,15 @@ export default function CourseTable({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="gap-1"
+                        className="gap-1 disabled:opacity-40 disabled:hover:bg-transparent"
+                        disabled={isInactive}
+                        title={isInactive ? "Cannot edit an inactive course." : undefined}
                         onClick={() => onEdit(course)}
                       >
                         <Pencil className="h-4 w-4" aria-hidden />
                         Edit
                       </Button>
-
+ 
                       <Button
                         type="button"
                         variant="outline"
@@ -145,19 +179,15 @@ export default function CourseTable({
                       >
                         {course.status === "ACTIVE" ? "Deactivate" : "Activate"}
                       </Button>
-
+ 
                       {onDelete && (
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
                           className="gap-1 text-destructive hover:text-destructive hover:bg-destructive/5 disabled:opacity-40 disabled:hover:bg-transparent"
-                          disabled={hasEnrollments}
-                          title={
-                            hasEnrollments
-                              ? "Cannot delete courses with enrolled students. Deactivate instead."
-                              : "Permanently delete course"
-                          }
+                          disabled={cannotDelete}
+                          title={getDeleteTooltip()}
                           onClick={() => onDelete(course)}
                         >
                           <Trash2 className="h-4 w-4" aria-hidden />

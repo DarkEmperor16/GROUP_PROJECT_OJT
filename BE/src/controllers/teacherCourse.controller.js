@@ -445,7 +445,44 @@ async function deleteMyCourse(req, res) {
     });
   }
 
-  await CourseDocument.deleteMany({ courseId: course._id });
+  const QaHistory = require('../models/QaHistory');
+  const QaRecord = require('../models/QaRecord');
+
+  // BR-001: Course can be deleted only when it has no students.
+  const hasStudents = await Enrollment.exists({ courseId: id, status: 'ACTIVE' });
+  if (hasStudents) {
+    return res.status(400).json({
+      message: 'Course can be deleted only when it has no students.'
+    });
+  }
+
+  // BR-003: Course can be deleted only when it has no AI index.
+  const hasAiIndex = await CourseDocument.exists({ courseId: id });
+  if (hasAiIndex) {
+    return res.status(400).json({
+      message: 'Course can be deleted only when it has no AI index.'
+    });
+  }
+
+  // BR-004: Course can be deleted only when it has no quiz.
+  const hasQuiz = await Quiz.exists({ courseId: id });
+  if (hasQuiz) {
+    return res.status(400).json({
+      message: 'Course can be deleted only when it has no quiz.'
+    });
+  }
+
+  // BR-005: Course can be deleted only when it has no chat history.
+  const [hasQaHistory, hasQaRecord] = await Promise.all([
+    QaHistory.exists({ courseId: id }),
+    QaRecord.exists({ courseId: id })
+  ]);
+  if (hasQaHistory || hasQaRecord) {
+    return res.status(400).json({
+      message: 'Course can be deleted only when it has no chat history.'
+    });
+  }
+
   await Course.deleteOne({ _id: course._id });
 
   return res.json({

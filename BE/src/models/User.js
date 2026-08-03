@@ -28,6 +28,10 @@ const userSchema = new mongoose.Schema(
       enum: ['ACTIVE', 'INACTIVE'],
       default: 'ACTIVE',
     },
+    isLocked: {
+      type: Boolean,
+      default: false,
+    },
     userCode: {
       type: String,
       default: '',
