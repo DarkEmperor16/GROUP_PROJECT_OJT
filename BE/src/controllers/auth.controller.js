@@ -162,24 +162,72 @@ async function login(req, res) {
     logActivity(user._id.toString(), 'LOGIN_FAILED', 'FAILED', ipAddress);
     return res.status(403).json({
       message: 'Account is inactive',
+      code: 'ACCOUNT_INACTIVE',
     });
   }
 
   if (user.isLocked) {
     logActivity(user._id.toString(), 'LOGIN_FAILED', 'FAILED', ipAddress);
     return res.status(403).json({
-      message: 'Account is locked',
+      message: 'Account is locked by administrator',
+      code: 'ACCOUNT_LOCKED',
     });
+  }
+
+  // ── Check temporary lockout ──
+  const now = new Date();
+  if (user.lockedUntil) {
+    if (user.lockedUntil > now) {
+      const retryAfterSeconds = Math.ceil((user.lockedUntil.getTime() - now.getTime()) / 1000);
+      logActivity(user._id.toString(), 'LOGIN_FAILED', 'FAILED', ipAddress);
+      return res.status(403).json({
+        message: 'Account is temporarily locked due to multiple failed login attempts.',
+        code: 'ACCOUNT_LOCKED',
+        retryAfterSeconds,
+      });
+    } else {
+      // Auto-heal lock after expiration
+      user.failedLoginAttempts = 0;
+      user.lockedUntil = null;
+      await user.save();
+    }
   }
 
   // ── Verify password ──
   const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
 
   if (!isPasswordValid) {
+    const attempts = (user.failedLoginAttempts || 0) + 1;
+    user.failedLoginAttempts = attempts;
+
+    if (attempts >= 5) {
+      const lockoutDurationMs = 15 * 60 * 1000; // 15 minutes
+      user.lockedUntil = new Date(Date.now() + lockoutDurationMs);
+      await user.save();
+
+      logActivity(user._id.toString(), 'ACCOUNT_LOCKED_TEMPORARY', 'FAILED', ipAddress);
+      return res.status(403).json({
+        message: 'Too many failed login attempts. Your account has been temporarily locked for 15 minutes.',
+        code: 'ACCOUNT_LOCKED',
+        retryAfterSeconds: 900,
+      });
+    }
+
+    await user.save();
+    const remaining = 5 - attempts;
+
     logActivity(user._id.toString(), 'LOGIN_FAILED', 'FAILED', ipAddress);
     return res.status(401).json({
-      message: 'Invalid email or password',
+      message: `Invalid email or password. ${remaining} attempt(s) remaining before account lockout.`,
+      code: 'INVALID_CREDENTIALS',
     });
+  }
+
+  // ── Reset failed attempts on success ──
+  if (user.failedLoginAttempts > 0 || user.lockedUntil) {
+    user.failedLoginAttempts = 0;
+    user.lockedUntil = null;
+    await user.save();
   }
 
   // ── Success: trả Access Token + Refresh Token ──
