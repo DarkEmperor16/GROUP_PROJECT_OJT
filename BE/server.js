@@ -20,6 +20,7 @@ const aiRoutes = require('./src/routes/ai.routes');
 const adminRoutes = require('./src/routes/admin.routes');
 
 const { errorHandler } = require('./src/middlewares/error.middleware');
+const { xssProtection } = require('./src/middlewares/xssProtection.middleware');
 const { connectDB } = require('./src/config/db');
 
 const app = express();
@@ -27,6 +28,7 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '20kb' }));
 app.use(cookieParser()); // Parse cookies (cần cho refresh token)
+app.use(xssProtection); // Reject requests containing XSS payloads before they reach any controller
 
 const PORT = process.env.PORT || 3000;
 
