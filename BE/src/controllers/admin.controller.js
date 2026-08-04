@@ -4,7 +4,7 @@ const User = require('../models/User');
 const Course = require('../models/Course');
 const CourseDocument = require('../models/CourseDocument');
 const QaHistory = require('../models/QaHistory');
-const { activityLogs } = require('../data/activityLogs');
+const { activityLogs, addActivityLog } = require('../data/activityLogs');
 
 function buildUserResponse(user) {
   return {
@@ -826,6 +826,7 @@ async function lockUser(req, res) {
     }
     user.isLocked = true;
     await user.save();
+    addActivityLog({ userId: user._id.toString(), action: 'USER_LOCKED', result: 'SUCCESS', ipAddress: req.ip });
     return res.json({
       message: 'User account locked successfully',
       data: buildUserResponse(user),
@@ -849,7 +850,10 @@ async function unlockUser(req, res) {
       return res.status(404).json({ message: 'User not found' });
     }
     user.isLocked = false;
+    user.failedLoginAttempts = 0;
+    user.lockedUntil = null;
     await user.save();
+    addActivityLog({ userId: user._id.toString(), action: 'USER_UNLOCKED', result: 'SUCCESS', ipAddress: req.ip });
     return res.json({
       message: 'User account unlocked successfully',
       data: buildUserResponse(user),

@@ -3,7 +3,7 @@ const fs = require('fs');
 const mongoose = require('mongoose');
 const Course = require('../models/Course');
 const CourseDocument = require('../models/CourseDocument');
-const { buildIndexPayload, requestDocumentIndex, notifyDocumentStatusChange } = require('../services/ai.service');
+const { buildIndexPayload, requestDocumentIndex, notifyDocumentStatusChange, requestDocumentDeletion } = require('../services/ai.service');
 
 const DOCUMENT_STATUSES = new Set(['uploaded', 'processing', 'active', 'failed', 'inactive']);
 const TEACHER_ALLOWED_DOCUMENT_STATUSES = new Set(['active', 'inactive']);
@@ -362,6 +362,7 @@ async function updateDocumentMetadata(req, res) {
   });
 }
 
+
 async function deleteDocument(req, res) {
   const { documentId } = req.params;
 
@@ -386,6 +387,16 @@ async function deleteDocument(req, res) {
   }
 
   const storagePath = document.storagePath ? path.resolve(process.cwd(), document.storagePath) : null;
+
+  // Sync deletion with AI Service Vector DB
+  try {
+    const aiResult = await requestDocumentDeletion({ fileName: document.fileName });
+    if (!aiResult.accepted) {
+      console.warn(`[AI Service Warning]: Failed to delete vector embeddings for ${document.fileName}: ${aiResult.errorMessage}`);
+    }
+  } catch (error) {
+    console.error(`[AI Service Error]: Error notifying AI service of document deletion for ${document.fileName}:`, error);
+  }
 
   await CourseDocument.deleteOne({ _id: document._id });
 

@@ -121,6 +121,47 @@ async function notifyDocumentStatusChange(payload) {
   }
 }
 
+async function requestDocumentDeletion(payload) {
+  const { fileName } = payload;
+  const aiServiceUrl = process.env.AI_SERVICE_URL;
+
+  if (!aiServiceUrl) {
+    throw new Error('AI_SERVICE_URL is not configured');
+  }
+
+  const encodedFileName = encodeURIComponent(fileName);
+  const endpoint = `${aiServiceUrl.replace(/\/$/, '')}/api/v1/documents/by-filename/${encodedFileName}`;
+  const optionsCreator = (signal) => ({
+    method: 'DELETE',
+    headers: {
+      ...(process.env.AI_SERVICE_API_KEY ? { Authorization: `Bearer ${process.env.AI_SERVICE_API_KEY}` } : {}),
+    },
+    signal,
+  });
+
+  try {
+    const response = await requestWithRetry(endpoint, optionsCreator);
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      return {
+        accepted: false,
+        errorMessage: data.detail || data.message || 'AI Service rejected document deletion',
+      };
+    }
+
+    return {
+      accepted: true,
+      message: data.message || 'Document deleted from AI Service',
+    };
+  } catch (error) {
+    return {
+      accepted: false,
+      errorMessage: error.name === 'AbortError' ? 'AI Service timeout during deletion' : 'AI Service unavailable during deletion',
+    };
+  }
+}
+
 async function proxyRequest(method, path, data = null, params = null) {
   const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://127.0.0.1:8000';
   const url = new URL(`${aiServiceUrl.replace(/\/$/, '')}${path}`);
@@ -158,5 +199,7 @@ module.exports = {
   buildIndexPayload,
   requestDocumentIndex,
   notifyDocumentStatusChange,
+  requestDocumentDeletion,
   proxyRequest,
 };
+

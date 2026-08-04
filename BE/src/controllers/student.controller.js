@@ -6,6 +6,7 @@ const Enrollment = require('../models/Enrollment');
 const QuizSession = require('../models/QuizSession');
 const { paginate } = require('../utils/paginate');
 const { sendQuestionToAI } = require('../utils/aiService');
+const { containsXss } = require('../middlewares/xssProtection.middleware');
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -299,6 +300,16 @@ async function askAi(req, res) {
         .json({
           message: `Question exceeds maximum allowed length of ${MAX_QUESTION_LEN} characters`,
         });
+    }
+
+    // Defense-in-depth: explicitly reject XSS payloads in the question field.
+    // The global xssProtection middleware already blocks these, but this guard
+    // ensures the endpoint remains safe even if middleware ordering changes.
+    if (containsXss(question)) {
+      return res.status(400).json({
+        message: 'Question contains invalid characters or script content.',
+        code: 'XSS_DETECTED',
+      });
     }
 
     // Kiểm tra xem đầu vào là ObjectId hợp lệ hay là mã courseCode (ví dụ: prf-192)
