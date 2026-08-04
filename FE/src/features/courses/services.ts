@@ -166,7 +166,7 @@ export const courseService = {
 
   async getStudentEnrollments(studentEmail: string): Promise<Enrollment[]> {
     const data = (await apiClient.get(
-      `/courses/student/enrollments?email=${encodeURIComponent(studentEmail)}`
+      `/admin/courses/student/enrollments?email=${encodeURIComponent(studentEmail)}`
     )) as any;
 
     return (data.result?.data ?? data.data ?? data) as Enrollment[];

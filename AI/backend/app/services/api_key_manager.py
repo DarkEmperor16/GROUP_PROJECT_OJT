@@ -28,6 +28,18 @@ class ApiKeyManager:
         self.current_idx = (self.current_idx + 1) % len(self.keys)
         return key
 
+    def get_next_key_info(self):
+        """
+        Returns (key, 1-based index) of the next API key in a round-robin fashion.
+        """
+        if not self.keys:
+            return "", 0
+        
+        idx = self.current_idx
+        key = self.keys[idx]
+        self.current_idx = (self.current_idx + 1) % len(self.keys)
+        return key, idx + 1
+
     def num_keys(self) -> int:
         return len(self.keys)
 

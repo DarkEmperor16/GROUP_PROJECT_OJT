@@ -66,8 +66,9 @@ export function parseAuthSecurityError(error: unknown): AuthSecurityAlert {
       title: "Account temporarily locked",
       description:
         retry && retry > 0
-          ? `Too many failed attempts. Try again in ${Math.ceil(retry / 60)} minutes or contact your administrator.`
+          ? `Too many failed attempts. Contact your administrator or wait for lockout timer.`
           : "Too many failed login attempts. Contact your administrator.",
+      retryAfterSeconds: retry,
     };
   }
 

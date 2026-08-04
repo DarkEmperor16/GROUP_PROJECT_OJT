@@ -1,0 +1,26 @@
+node_modules/
+.env
+env
+/scripts/
+!src/scripts/
+postman/
+logs/
+uploads/
+!uploads/.gitkeep
+!uploads/**/.gitkeep
+!logs/.gitkeep
+!logs/**/.gitkeep
+dist/
+coverage/
+*.log
+
+# Local notes / guides (Quang) — never commit
+LOCAL-QUANG/
+LOCAL-SETUP/
+.cursor/
+
+# Fallback if guide files accidentally land at repo root
+SRS-*.md
+stitch_login_aviation_academy_ai/
+env.txt
+docker-compose.txt

@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   backend:
@@ -8,11 +8,11 @@ services:
     container_name: ojt_backend
     restart: always
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
       - PORT=3000
       - NODE_ENV=production
-      - AI_SERVICE_URL=http://ai:8000
+      - AI_SERVICE_URL=http://ai:8000 # Gọi nội bộ qua tên service 'ai'
     env_file:
       - ./BE/.env
     volumes:
@@ -24,8 +24,9 @@ services:
       dockerfile: Dockerfile
     container_name: ojt_ai
     restart: always
-    ports:
-      - "8000:8000"
+    # ĐÃ ĐÓNG PORT: Không ánh xạ cổng ra ngoài Internet để tránh bị tool quét.
+    # ports:
+    #   - "8000:8000"
     environment:
       - BE_SERVICE_URL=http://backend:3000
     volumes:
@@ -41,7 +42,7 @@ services:
     container_name: ojt_frontend
     restart: always
     ports:
-      - "80:80"
+      - "80:80" # Cổng Web public bắt buộc mở để truy cập giao diện.
     depends_on:
       - backend
       - ai
@@ -50,8 +51,13 @@ services:
     image: mongo:latest
     container_name: ojt_mongodb
     restart: always
-    ports:
-      - "27017:27017"
+    # ĐÃ ĐÓNG PORT: Khóa kín Database khỏi Internet. Hacker không thể dùng IP để chui vào.
+    # ports:
+    #   - "27017:27017"
+    environment:
+      # BẬT XÁC THỰC BẢO MẬT: Bắt buộc Backend phải cung cấp mật khẩu mới được đọc/ghi dữ liệu.
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
     volumes:
       - mongodb_data:/data/db
 

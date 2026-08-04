@@ -28,6 +28,10 @@ const userSchema = new mongoose.Schema(
       enum: ['ACTIVE', 'INACTIVE'],
       default: 'ACTIVE',
     },
+    isLocked: {
+      type: Boolean,
+      default: false,
+    },
     userCode: {
       type: String,
       default: '',
@@ -56,6 +60,14 @@ const userSchema = new mongoose.Schema(
     mfaEnabled: {
       type: Boolean,
       default: false,
+    },
+    failedLoginAttempts: {
+      type: Number,
+      default: 0,
+    },
+    lockedUntil: {
+      type: Date,
+      default: null,
     },
   },
   {

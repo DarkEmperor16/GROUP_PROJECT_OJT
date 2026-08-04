@@ -6,6 +6,7 @@ const Enrollment = require('../models/Enrollment');
 const QuizSession = require('../models/QuizSession');
 const { paginate } = require('../utils/paginate');
 const { sendQuestionToAI } = require('../utils/aiService');
+const { containsXss } = require('../middlewares/xssProtection.middleware');
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -34,13 +35,33 @@ async function getCourses(req, res) {
   try {
     const { page = 1, limit = 10 } = req.query;
 
+    // Only return courses the authenticated student is actively enrolled in.
+    // This prevents students from seeing all active courses that they are
+    // not assigned to by an admin.
+    const enrollments = await Enrollment.find(
+      { studentId: req.user._id, status: 'ACTIVE' },
+      { courseId: 1, _id: 0 },
+    ).lean();
+
+    const enrolledCourseIds = enrollments.map((e) => e.courseId);
+
+    if (!enrolledCourseIds || enrolledCourseIds.length === 0) {
+      return res.json({
+        data: [],
+        page: Number(page),
+        limit: Number(limit),
+        total: 0,
+        totalPages: 0,
+      });
+    }
+
     const result = await paginate(
       Course,
-      { status: 'ACTIVE' },
+      { _id: { $in: enrolledCourseIds }, status: 'ACTIVE' },
       {
         page,
         limit,
-        sort: { title: 1 }, // alphabetical — easier to scan for students
+        sort: { title: 1 },
         populate: { path: 'teacherId', select: 'fullName email' },
       },
     );
@@ -173,11 +194,11 @@ async function submitQuiz(req, res) {
       const isCorrect = answers[i] === q.correctAnswer;
       if (isCorrect) score++;
       return {
-        questionId:     q._id,
+        questionId: q._id,
         isCorrect,
         selectedAnswer: answers[i],
-        correctAnswer:  q.correctAnswer,  // now safe to reveal
-        explanation:    q.explanation,
+        correctAnswer: q.correctAnswer, // now safe to reveal
+        explanation: q.explanation,
       };
     });
 
@@ -199,7 +220,7 @@ async function submitQuiz(req, res) {
     return res.json({
       quizId,
       score,
-      total:      totalQuestions,
+      total: totalQuestions,
       percentage,
       results,
     });
@@ -258,19 +279,43 @@ async function askAi(req, res) {
   try {
     const { courseId, question } = req.body;
 
-    if (!courseId || typeof courseId !== 'string' || !question || typeof question !== 'string' || !question.trim()) {
-      return res.status(400).json({ message: '`courseId` (or course code) and a non-empty `question` string are required' });
+    if (
+      !courseId ||
+      typeof courseId !== 'string' ||
+      !question ||
+      typeof question !== 'string' ||
+      !question.trim()
+    ) {
+      return res
+        .status(400)
+        .json({
+          message: '`courseId` (or course code) and a non-empty `question` string are required',
+        });
     }
 
     const MAX_QUESTION_LEN = 2000;
     if (question.trim().length > MAX_QUESTION_LEN) {
-      return res.status(400).json({ message: `Question exceeds maximum allowed length of ${MAX_QUESTION_LEN} characters` });
+      return res
+        .status(400)
+        .json({
+          message: `Question exceeds maximum allowed length of ${MAX_QUESTION_LEN} characters`,
+        });
+    }
+
+    // Defense-in-depth: explicitly reject XSS payloads in the question field.
+    // The global xssProtection middleware already blocks these, but this guard
+    // ensures the endpoint remains safe even if middleware ordering changes.
+    if (containsXss(question)) {
+      return res.status(400).json({
+        message: 'Question contains invalid characters or script content.',
+        code: 'XSS_DETECTED',
+      });
     }
 
     // Kiểm tra xem đầu vào là ObjectId hợp lệ hay là mã courseCode (ví dụ: prf-192)
     const isObjectId = mongoose.Types.ObjectId.isValid(courseId);
     const query = { status: 'ACTIVE' };
-    
+
     if (isObjectId) {
       query._id = courseId;
     } else {
@@ -345,9 +390,9 @@ async function getQuestions(req, res) {
     }
 
     // ── 2. Pagination bounds ───────────────────────────────────
-    const safePage  = Math.max(1, parseInt(page, 10));
+    const safePage = Math.max(1, parseInt(page, 10));
     const safeLimit = Math.min(Math.max(1, parseInt(limit, 10)), 100);
-    const skip      = (safePage - 1) * safeLimit;
+    const skip = (safePage - 1) * safeLimit;
 
     // ── 3. Resolve enrolled course IDs for this student ───────
     //    This is the mandatory enrollment gate — students can only see
@@ -373,7 +418,7 @@ async function getQuestions(req, res) {
     // If a specific courseId was requested, verify it is among the enrolled ones.
     if (courseId) {
       const requestedId = new mongoose.Types.ObjectId(courseId);
-      const isEnrolled  = enrolledCourseIds.some((id) => id.equals(requestedId));
+      const isEnrolled = enrolledCourseIds.some((id) => id.equals(requestedId));
       if (!isEnrolled) {
         return res.status(403).json({ message: 'You are not enrolled in this course' });
       }
@@ -387,10 +432,10 @@ async function getQuestions(req, res) {
       // Join Course to get code + title for the response
       {
         $lookup: {
-          from:         'courses',
-          localField:   'courseId',
+          from: 'courses',
+          localField: 'courseId',
           foreignField: '_id',
-          as:           'course',
+          as: 'course',
         },
       },
 
@@ -403,7 +448,7 @@ async function getQuestions(req, res) {
       pipeline.push({
         $match: {
           'questions.text': {
-            $regex:   keyword.trim(),
+            $regex: keyword.trim(),
             $options: 'i',
           },
         },
@@ -413,13 +458,13 @@ async function getQuestions(req, res) {
     // Project safe response shape — correctAnswer and explanation are EXCLUDED
     pipeline.push({
       $project: {
-        _id:         '$questions._id',
-        text:        '$questions.text',
-        options:     '$questions.options',
-        quizId:      '$_id',
-        quizTitle:   '$title',
-        courseId:    1,
-        courseCode:  { $arrayElemAt: ['$course.code',  0] },
+        _id: '$questions._id',
+        text: '$questions.text',
+        options: '$questions.options',
+        quizId: '$_id',
+        quizTitle: '$title',
+        courseId: 1,
+        courseCode: { $arrayElemAt: ['$course.code', 0] },
         courseTitle: { $arrayElemAt: ['$course.title', 0] },
       },
     });
@@ -427,7 +472,7 @@ async function getQuestions(req, res) {
     // Single round-trip: paginated data + total count via $facet
     pipeline.push({
       $facet: {
-        data:  [{ $skip: skip }, { $limit: safeLimit }],
+        data: [{ $skip: skip }, { $limit: safeLimit }],
         total: [{ $count: 'count' }],
       },
     });
@@ -435,8 +480,8 @@ async function getQuestions(req, res) {
     // ── 5. Execute ─────────────────────────────────────────────
     const [facetResult] = await Quiz.aggregate(pipeline);
 
-    const data       = facetResult?.data  ?? [];
-    const total      = facetResult?.total?.[0]?.count ?? 0;
+    const data = facetResult?.data ?? [];
+    const total = facetResult?.total?.[0]?.count ?? 0;
     const totalPages = Math.ceil(total / safeLimit);
 
     return res.json({ data, page: safePage, limit: safeLimit, total, totalPages });

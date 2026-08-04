@@ -2,8 +2,10 @@ import { GraduationCap, Shield, UserCog } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/features/auth/types";
 
+type KnownRole = UserRole | string;
+
 const roleConfig: Record<
-  UserRole,
+  string,
   { label: string; icon: typeof GraduationCap; className: string }
 > = {
   STUDENT: {
@@ -19,12 +21,17 @@ const roleConfig: Record<
   ADMIN: {
     label: "Admin",
     icon: Shield,
-    className: "border-violet-200/80 bg-violet-50 text-violet-800",
+    className:
+      "border-violet-200/80 bg-violet-50 text-violet-800 dark:border-violet-800/50 dark:bg-violet-950/40 dark:text-violet-300",
   },
 };
 
-export default function UserRoleBadge({ role }: { role: UserRole }) {
-  const config = roleConfig[role];
+export default function UserRoleBadge({ role }: { role: KnownRole }) {
+  const config = roleConfig[role] ?? {
+    label: role ?? "Unknown",
+    icon: Shield,
+    className: "border-border/60 bg-muted/40 text-muted-foreground",
+  };
   const Icon = config.icon;
 
   return (

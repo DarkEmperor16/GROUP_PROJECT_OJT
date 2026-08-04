@@ -450,3 +450,89 @@ async def delete_subject_documents(subject: str):
         "message": f"Đã xóa thành công {len(deleted_docs)} tài liệu thuộc môn học '{subject}' và cập nhật lại Vector Index.",
         "deleted_count": len(deleted_docs)
     }
+
+@router.delete("/by-filename/{filename}")
+async def delete_document_by_filename(filename: str):
+    """
+    Xóa tài liệu cụ thể theo tên file và cập nhật lại Vector Index (AI-F3.5).
+    """
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    docs_dir = os.path.join(base_dir, "data", "docs")
+
+    # 1. Tải và cập nhật metadata
+    metadata_store = _load_metadata()
+
+    # Lọc ra những tài liệu KHÔNG trùng tên file cần xóa
+    updated_docs = [d for d in metadata_store["documents"] if d["filename"] != filename]
+    deleted_docs = [d for d in metadata_store["documents"] if d["filename"] == filename]
+
+    if not deleted_docs:
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy tài liệu nào có tên file: {filename}")
+
+    # 2. Xóa file vật lý trong data/docs
+    for doc in deleted_docs:
+        file_path = os.path.join(docs_dir, doc["filename"])
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except Exception as e:
+                print(f"[Error removing file {file_path}]: {e}")
+
+    # 3. Lưu metadata mới
+    metadata_store["documents"] = updated_docs
+    _save_metadata(metadata_store)
+
+    # 4. Tái tạo lại Vector Index (Re-index)
+    from app.api.chat import vector_service
+    vector_service.clear() # Xóa index hiện tại trong memory
+
+    # Quét lại toàn bộ file còn lại trong docs_dir và nạp lại
+    if os.path.exists(docs_dir):
+        all_files = os.listdir(docs_dir)
+        for fn in all_files:
+            # Tìm subject của file này trong metadata mới
+            doc_info = next((d for d in updated_docs if d["filename"] == fn), None)
+            if doc_info:
+                file_path = os.path.join(docs_dir, fn)
+                try:
+                    extracted_data = doc_service.extract_text(file_path)
+                    chunks = doc_service.chunk_text(extracted_data, common_metadata={
+                        "source": fn, 
+                        "subject": doc_info["subject"]
+                    })
+                    vector_service.add_documents(chunks)
+                except Exception as e:
+                    print(f"[Error re-indexing file {fn} during delete]: {e}")
+
+    # Lưu lại index mới xuống đĩa (hoặc xóa sạch nếu không còn vector nào)
+    if vector_service.vector_store is None:
+        vector_db_dir = os.path.join(base_dir, "data", "vector_db")
+        if os.path.exists(vector_db_dir):
+            try:
+                shutil.rmtree(vector_db_dir)
+                os.makedirs(vector_db_dir)
+            except Exception:
+                pass
+    else:
+        vector_service.save_local(os.path.join(base_dir, "data", "vector_db"))
+
+    # 5. Xóa Semantic Cache
+    cache_dir = os.path.join(base_dir, "data", "semantic_cache")
+    if os.path.exists(cache_dir):
+        try:
+            shutil.rmtree(cache_dir)
+            os.makedirs(cache_dir)
+        except Exception:
+            pass
+    
+    from app.api.chat import semantic_cache
+    semantic_cache.cache_store = None
+    try:
+        semantic_cache.load_cache()
+    except Exception:
+        pass
+
+    return {
+        "message": f"Đã xóa thành công tài liệu '{filename}' và cập nhật lại Vector Index.",
+        "deleted_filename": filename
+    }

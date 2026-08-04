@@ -30,6 +30,7 @@ export const ROLE_NAV_ITEMS: Record<UserRole, RoleNavItem[]> = {
   ADMIN: [
     { label: "Dashboard", path: "/admin/dashboard", end: true },
     { label: "Users", path: "/admin/users" },
+    { label: "Roles", path: "/admin/roles" },
     { label: "Courses", path: "/admin/courses" },
     { label: "Documents", path: "/admin/documents" },
     { label: "Q&A Logs", path: "/admin/qa" },

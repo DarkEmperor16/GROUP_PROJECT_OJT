@@ -44,6 +44,7 @@ export interface AuthSecurityAlert {
   variant: "destructive" | "warning" | "default";
   title: string;
   description: string;
+  retryAfterSeconds?: number;
 }
 
 export interface AuthApiErrorBody {

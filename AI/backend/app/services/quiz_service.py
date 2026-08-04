@@ -13,7 +13,7 @@ class QuizService:
         """
         Sinh câu hỏi ôn tập trắc nghiệm (AI-F6).
         """
-        if not api_key_manager.get_next_key():
+        if api_key_manager.num_keys() == 0:
             return "Lỗi: Chưa cấu hình API Key cho mô hình AI."
 
         context_text = "\n\n".join([doc.page_content for doc in context_docs])
@@ -85,11 +85,10 @@ NGỮ CẢNH:
         
         max_retries = max(1, api_key_manager.num_keys())
         for attempt in range(max_retries):
-            api_key = api_key_manager.get_next_key()
+            api_key, key_index = api_key_manager.get_next_key_info()
             
             # Print to terminal for testing/debugging
-            masked_key = f"{api_key[:10]}...{api_key[-5:]}" if len(api_key) > 15 else "INVALID_LENGTH"
-            print(f"[Quiz Key Rotation] Attempt {attempt+1}/{max_retries} | Using Key: {masked_key}")
+            print(f"[Quiz Key Rotation] Attempt {attempt+1}/{max_retries} | Using Key #{key_index}")
 
             llm = ChatGoogleGenerativeAI(
                 model=os.getenv("GOOGLE_LLM_MODEL"),
@@ -112,7 +111,7 @@ NGỮ CẢNH:
                 error_msg = str(e).lower()
                 # Catch rate limits, quota, and invalid keys (for testing)
                 if any(x in error_msg for x in ["429", "resource exhausted", "quota", "api key not valid", "400"]):
-                    print(f"[Quiz Key Rotation] Failed with key {masked_key}. Reason: {error_msg}. Rotating...")
+                    print(f"[Quiz Key Rotation] Failed with Key #{key_index}. Reason: {error_msg}. Rotating...")
                     if attempt == max_retries - 1:
                         return "Lỗi: Tất cả các API key đã hết lượt sử dụng (Rate limit / Quota)."
                     continue
