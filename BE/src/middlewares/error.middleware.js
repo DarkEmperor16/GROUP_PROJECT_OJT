@@ -18,9 +18,10 @@ function errorHandler(err, req, res, next) {
     });
   }
 
-  if (err.message && err.message.includes('Unsupported file type')) {
+  // File-type validation errors thrown by multer fileFilter
+  if (err.message && err.message.includes('Định dạng file không hợp lệ')) {
     return res.status(400).json({
-      message: err.message,
+      message: 'Định dạng file không hợp lệ',
     });
   }
 
