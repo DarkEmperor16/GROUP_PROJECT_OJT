@@ -4,27 +4,45 @@ const mongoose = require('mongoose');
 const Course = require('../models/Course');
 const CourseDocument = require('../models/CourseDocument');
 const QaHistory = require('../models/QaHistory');
-const { buildIndexPayload, requestDocumentIndex, notifyDocumentStatusChange, requestDocumentDeletion } = require('../services/ai.service');
+const {
+  buildIndexPayload,
+  requestDocumentIndex,
+  notifyDocumentStatusChange,
+  requestDocumentDeletion,
+} = require('../services/ai.service');
 
 const DOCUMENT_STATUSES = new Set(['uploaded', 'processing', 'active', 'failed', 'inactive']);
 const TEACHER_ALLOWED_DOCUMENT_STATUSES = new Set(['active', 'inactive']);
 
+function getIndexStatus(status) {
+  switch (status) {
+    case 'active':
+      return 'completed';
+    case 'processing':
+      return 'processing';
+    case 'failed':
+      return 'failed';
+    case 'uploaded':
+      return 'pending';
+    case 'inactive':
+      return 'inactive';
+    default:
+      return status;
+  }
+}
+
 function formatDocumentResponse(document) {
   return {
     id: document._id,
-    courseId: document.courseId,
-    uploadedBy: document.uploadedBy,
     title: document.title,
-    version: document.version,
     description: document.description,
+    version: document.version,
     fileName: document.fileName,
-    storagePath: document.storagePath,
     mimeType: document.mimeType,
     size: document.size,
     status: document.status,
-    aiRequestId: document.aiRequestId,
-    aiErrorMessage: document.aiErrorMessage,
-    indexedAt: document.indexedAt,
+    indexStatus: getIndexStatus(document.status),
+    downloadUrl: `/api/course-documents/${document._id}/download`,
     createdAt: document.createdAt,
     updatedAt: document.updatedAt,
   };
@@ -45,7 +63,9 @@ async function findCourseAndAuthorizeTeacher(courseId, userId) {
     return { error: { statusCode: 409, message: 'Course is inactive' } };
   }
 
-  const isAssignedTeacher = course.teacherIds.some((teacherId) => teacherId.toString() === userId.toString());
+  const isAssignedTeacher = course.teacherIds.some(
+    (teacherId) => teacherId.toString() === userId.toString(),
+  );
 
   if (!isAssignedTeacher) {
     return { error: { statusCode: 403, message: 'You are not assigned to this course' } };
@@ -363,7 +383,6 @@ async function updateDocumentMetadata(req, res) {
   });
 }
 
-
 async function deleteDocument(req, res) {
   const { documentId } = req.params;
 
@@ -387,16 +406,23 @@ async function deleteDocument(req, res) {
     return res.status(auth.error.statusCode).json({ message: auth.error.message });
   }
 
-  const storagePath = document.storagePath ? path.resolve(process.cwd(), document.storagePath) : null;
+  const storagePath = document.storagePath
+    ? path.resolve(process.cwd(), document.storagePath)
+    : null;
 
   // Sync deletion with AI Service Vector DB
   try {
     const aiResult = await requestDocumentDeletion({ fileName: document.fileName });
     if (!aiResult.accepted) {
-      console.warn(`[AI Service Warning]: Failed to delete vector embeddings for ${document.fileName}: ${aiResult.errorMessage}`);
+      console.warn(
+        `[AI Service Warning]: Failed to delete vector embeddings for ${document.fileName}: ${aiResult.errorMessage}`,
+      );
     }
   } catch (error) {
-    console.error(`[AI Service Error]: Error notifying AI service of document deletion for ${document.fileName}:`, error);
+    console.error(
+      `[AI Service Error]: Error notifying AI service of document deletion for ${document.fileName}:`,
+      error,
+    );
   }
 
   await CourseDocument.deleteOne({ _id: document._id });
@@ -404,7 +430,9 @@ async function deleteDocument(req, res) {
   // Xóa toàn bộ lịch sử chat AI của course này vì tài liệu đã thay đổi
   try {
     const deletedChatResult = await QaHistory.deleteMany({ courseId: document.courseId });
-    console.log(`[deleteDocument] Deleted ${deletedChatResult.deletedCount} QaHistory records for course ${document.courseId}`);
+    console.log(
+      `[deleteDocument] Deleted ${deletedChatResult.deletedCount} QaHistory records for course ${document.courseId}`,
+    );
   } catch (chatDeleteError) {
     console.error('[deleteDocument] Failed to delete QaHistory:', chatDeleteError);
   }
@@ -423,9 +451,8 @@ async function deleteDocument(req, res) {
   });
 }
 
-async function updateDocumentStatus(req, res) {
+async function downloadCourseDocument(req, res) {
   const { documentId } = req.params;
-  const { status, errorMessage = null } = req.body;
 
   if (!isValidObjectId(documentId)) {
     return res.status(400).json({
@@ -433,9 +460,47 @@ async function updateDocumentStatus(req, res) {
     });
   }
 
-  if (!DOCUMENT_STATUSES.has(status)) {
+  const document = await CourseDocument.findById(documentId);
+
+  if (!document) {
+    return res.status(404).json({
+      message: 'Document not found',
+    });
+  }
+
+  const auth = await findCourseAndAuthorizeTeacher(document.courseId, req.user._id);
+
+  if (auth.error) {
+    return res.status(auth.error.statusCode).json({ message: auth.error.message });
+  }
+
+  const storagePath = document.storagePath
+    ? path.resolve(process.cwd(), document.storagePath)
+    : null;
+
+  if (!storagePath || !fs.existsSync(storagePath)) {
+    return res.status(404).json({
+      message: 'File not found',
+    });
+  }
+
+  return res.download(storagePath, document.fileName, (err) => {
+    if (err) {
+      console.error('[downloadCourseDocument] download error:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ message: 'Failed to download document' });
+      }
+    }
+  });
+}
+
+async function updateDocumentStatus(req, res) {
+  const { documentId } = req.params;
+  const { status, errorMessage = null } = req.body;
+
+  if (!isValidObjectId(documentId)) {
     return res.status(400).json({
-      message: 'Invalid document status',
+      message: 'Invalid documentId',
     });
   }
 
@@ -458,7 +523,8 @@ async function updateDocumentStatus(req, res) {
   }
 
   document.status = status;
-  document.aiErrorMessage = status === 'failed' ? errorMessage || 'Unknown AI indexing error' : null;
+  document.aiErrorMessage =
+    status === 'failed' ? errorMessage || 'Unknown AI indexing error' : null;
 
   if (status === 'active') {
     document.indexedAt = new Date();
@@ -481,4 +547,5 @@ module.exports = {
   updateDocumentMetadata,
   deleteDocument,
   updateDocumentStatus,
+  downloadCourseDocument,
 };

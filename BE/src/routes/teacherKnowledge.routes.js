@@ -5,6 +5,7 @@ const {
   uploadDocument,
   listCourseDocuments,
   getDocumentDetail,
+  downloadCourseDocument,
   reindexDocument,
   updateDocumentActiveStatus,
   updateDocumentMetadata,
@@ -25,11 +26,47 @@ router.post(
   uploadDocument,
 );
 
-router.get('/courses/:courseId/documents', authenticateToken, authorizeRoles('TEACHER'), listCourseDocuments);
-router.get('/documents/:documentId', authenticateToken, authorizeRoles('TEACHER'), getDocumentDetail);
-router.post('/documents/:documentId/reindex', authenticateToken, authorizeRoles('TEACHER'), reindexDocument);
-router.patch('/documents/:documentId', authenticateToken, authorizeRoles('TEACHER'), updateDocumentMetadata);
-router.patch('/documents/:documentId/status', authenticateToken, authorizeRoles('TEACHER'), updateDocumentActiveStatus);
-router.delete('/documents/:documentId', authenticateToken, authorizeRoles('TEACHER'), deleteDocument);
+router.get(
+  '/courses/:courseId/documents',
+  authenticateToken,
+  authorizeRoles('TEACHER'),
+  listCourseDocuments,
+);
+router.get(
+  '/documents/:documentId',
+  authenticateToken,
+  authorizeRoles('TEACHER'),
+  getDocumentDetail,
+);
+router.get(
+  '/documents/:documentId/download',
+  authenticateToken,
+  authorizeRoles('TEACHER'),
+  downloadCourseDocument,
+);
+router.post(
+  '/documents/:documentId/reindex',
+  authenticateToken,
+  authorizeRoles('TEACHER'),
+  reindexDocument,
+);
+router.patch(
+  '/documents/:documentId',
+  authenticateToken,
+  authorizeRoles('TEACHER'),
+  updateDocumentMetadata,
+);
+router.patch(
+  '/documents/:documentId/status',
+  authenticateToken,
+  authorizeRoles('TEACHER'),
+  updateDocumentActiveStatus,
+);
+router.delete(
+  '/documents/:documentId',
+  authenticateToken,
+  authorizeRoles('TEACHER'),
+  deleteDocument,
+);
 
 module.exports = router;
