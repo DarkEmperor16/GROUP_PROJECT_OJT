@@ -88,7 +88,27 @@ async function getQuizzes(req, res) {
   try {
     const { page = 1, limit = 10, courseId } = req.query;
 
-    const filter = { status: 'ACTIVE' };
+    // Only return quizzes for courses where the student is actively enrolled.
+    const enrollments = await Enrollment.find(
+      { studentId: req.user._id, status: 'ACTIVE' },
+      { courseId: 1, _id: 0 },
+    ).lean();
+
+    const enrolledCourseIds = enrollments.map((e) => e.courseId);
+    if (enrolledCourseIds.length === 0) {
+      return res.json({
+        data: [],
+        page: Number(page),
+        limit: Number(limit),
+        total: 0,
+        totalPages: 0,
+      });
+    }
+
+    const filter = {
+      status: 'ACTIVE',
+      courseId: { $in: enrolledCourseIds },
+    };
 
     if (courseId) {
       if (!requireValidObjectId(res, courseId, 'courseId')) return;
@@ -129,10 +149,21 @@ async function getQuizById(req, res) {
 
     if (!requireValidObjectId(res, quizId, 'quiz ID')) return;
 
-    const quiz = await Quiz.findOne({ _id: quizId, status: 'ACTIVE' }).populate(
-      'courseId',
-      'title code description',
-    );
+    const enrollments = await Enrollment.find(
+      { studentId: req.user._id, status: 'ACTIVE' },
+      { courseId: 1, _id: 0 },
+    ).lean();
+
+    const enrolledCourseIds = enrollments.map((e) => e.courseId);
+    if (enrolledCourseIds.length === 0) {
+      return res.status(404).json({ message: 'Quiz not found' });
+    }
+
+    const quiz = await Quiz.findOne({
+      _id: quizId,
+      status: 'ACTIVE',
+      courseId: { $in: enrolledCourseIds },
+    }).populate('courseId', 'title code description');
 
     if (!quiz) {
       return res.status(404).json({ message: 'Quiz not found' });
@@ -286,20 +317,16 @@ async function askAi(req, res) {
       typeof question !== 'string' ||
       !question.trim()
     ) {
-      return res
-        .status(400)
-        .json({
-          message: '`courseId` (or course code) and a non-empty `question` string are required',
-        });
+      return res.status(400).json({
+        message: '`courseId` (or course code) and a non-empty `question` string are required',
+      });
     }
 
     const MAX_QUESTION_LEN = 2000;
     if (question.trim().length > MAX_QUESTION_LEN) {
-      return res
-        .status(400)
-        .json({
-          message: `Question exceeds maximum allowed length of ${MAX_QUESTION_LEN} characters`,
-        });
+      return res.status(400).json({
+        message: `Question exceeds maximum allowed length of ${MAX_QUESTION_LEN} characters`,
+      });
     }
 
     // Defense-in-depth: explicitly reject XSS payloads in the question field.
