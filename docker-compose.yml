@@ -42,7 +42,7 @@ services:
     container_name: ojt_frontend
     restart: always
     ports:
-      - "8888:80" # Web UI — host 8888 → container nginx :80
+      - "127.0.0.1:8888:80" # Web UI — chỉ localhost:8888 → container nginx :80
     depends_on:
       - backend
       - ai
