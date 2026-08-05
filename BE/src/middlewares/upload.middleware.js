@@ -12,25 +12,38 @@ if (!fs.existsSync(uploadDir)) {
 const allowedMimeTypes = new Set([
   'application/pdf',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   'application/msword',
-  'application/vnd.ms-powerpoint',
-  'text/plain',
-  // Lưu ý: 'application/octet-stream' bị loại bỏ vì quá chung chung
-  // và có thể bị lợi dụng để bypass validation
 ]);
 
 // Danh sách extension được phép
-const allowedExtensions = new Set(['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.txt']);
+const allowedExtensions = new Set(['.pdf', '.doc', '.docx']);
 
 // Danh sách extension nguy hiểm cần chặn tuyệt đối (phòng double-extension attack)
 const dangerousExtensions = new Set([
-  '.php', '.php3', '.php4', '.php5', '.php7', '.phtml', '.phar',
-  '.asp', '.aspx', '.asa', '.asax',
-  '.jsp', '.jspx',
-  '.exe', '.sh', '.bat', '.cmd', '.ps1',
-  '.py', '.rb', '.pl', '.cgi',
-  '.htaccess', '.htpasswd',
+  '.php',
+  '.php3',
+  '.php4',
+  '.php5',
+  '.php7',
+  '.phtml',
+  '.phar',
+  '.asp',
+  '.aspx',
+  '.asa',
+  '.asax',
+  '.jsp',
+  '.jspx',
+  '.exe',
+  '.sh',
+  '.bat',
+  '.cmd',
+  '.ps1',
+  '.py',
+  '.rb',
+  '.pl',
+  '.cgi',
+  '.htaccess',
+  '.htpasswd',
 ]);
 
 /**
@@ -58,7 +71,7 @@ const storage = multer.diskStorage({
     // Làm sạch tên file: xóa toàn bộ phần extension (kể cả double ext), chỉ giữ baseName
     const rawBase = file.originalname.replace(/\.[^.]+$/, ''); // bỏ ext cuối
     const safeBase = rawBase
-      .replace(/\.[^.]+$/, '')  // bỏ thêm một lớp nữa để tránh "name.jpg.php" → "name.jpg"
+      .replace(/\.[^.]+$/, '') // bỏ thêm một lớp nữa để tránh "name.jpg.php" → "name.jpg"
       .replace(/[^a-zA-Z0-9\-_]/g, '-') // ký tự đặc biệt → dấu gạch ngang
       .replace(/-+/g, '-')
       .toLowerCase()
