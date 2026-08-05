@@ -65,7 +65,7 @@ export default function StudentQuizListPage() {
 
 
 
-                const coursesRes = await fetch("http://localhost:3000/api/student/courses", { method: "GET", headers });
+                const coursesRes = await fetch("/api/student/courses", { method: "GET", headers });
 
                 let studentCourses: Course[] = [];
                 if (coursesRes.ok) {
@@ -81,7 +81,7 @@ export default function StudentQuizListPage() {
                 }
 
                 // 2. Build URL for Quizzes with courseId filter (#7 in API Docs)
-                let quizApiUrl = "http://localhost:3000/api/student/quizzes";
+                let quizApiUrl = "/api/student/quizzes";
                 if (selectedCourseId !== "ALL") {
                     quizApiUrl += `?courseId=${selectedCourseId}`;
                 }

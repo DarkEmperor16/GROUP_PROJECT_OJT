@@ -74,9 +74,9 @@ export default function StudentAiChatPage() {
             }
 
             try {
-                // Directly call localhost:3000
+
                 const response = await axios.get(
-                    `http://localhost:3000/api/student/history?courseId=${subjectId}&limit=50`,
+                    `/api/student/history?courseId=${subjectId}&limit=50`,
                     {
                         headers: {
                             Authorization: `Bearer ${token}`,
@@ -161,7 +161,7 @@ export default function StudentAiChatPage() {
         try {
             // Explicit call to backend port 3000
             const response = await axios.post(
-                "http://localhost:3000/api/student/ask-ai",
+                "/api/student/ask-ai",
                 {
                     courseId: subjectId,
                     question: trimmedInput,
@@ -251,8 +251,8 @@ export default function StudentAiChatPage() {
                             >
                                 <div
                                     className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.sender === "user"
-                                            ? "bg-primary text-primary-foreground"
-                                            : "bg-primary/10 text-primary"
+                                        ? "bg-primary text-primary-foreground"
+                                        : "bg-primary/10 text-primary"
                                         }`}
                                 >
                                     {msg.sender === "user" ? (
@@ -264,8 +264,8 @@ export default function StudentAiChatPage() {
 
                                 <div
                                     className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap leading-relaxed ${msg.sender === "user"
-                                            ? "bg-primary text-primary-foreground rounded-tr-none"
-                                            : "bg-muted text-foreground rounded-tl-none"
+                                        ? "bg-primary text-primary-foreground rounded-tr-none"
+                                        : "bg-muted text-foreground rounded-tl-none"
                                         }`}
                                 >
                                     {renderMessage(msg.text)}

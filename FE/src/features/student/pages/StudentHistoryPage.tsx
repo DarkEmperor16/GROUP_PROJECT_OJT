@@ -56,7 +56,7 @@ export default function StudentHistoryPage() {
         }
 
         const response = await fetch(
-          "http://localhost:3000/api/student/history",
+          "/api/student/history",
           {
             method: "GET",
             headers: {
