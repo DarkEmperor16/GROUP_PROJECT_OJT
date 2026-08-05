@@ -113,6 +113,65 @@ const uploadCourseDocument = multer({
   },
 });
 
+function getUploadedFile(req) {
+  return (
+    req.file ||
+    req.files?.file?.[0] ||
+    req.files?.document?.[0] ||
+    req.files?.documentFile?.[0] ||
+    (Array.isArray(req.files) ? req.files[0] : null)
+  );
+}
+
+function isValidDocumentSignature(buffer, extension) {
+  if (extension === '.pdf') {
+    return buffer.slice(0, 5).toString('ascii') === '%PDF-';
+  }
+
+  if (extension === '.doc') {
+    const docSignature = Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);
+    return buffer.slice(0, docSignature.length).equals(docSignature);
+  }
+
+  if (extension === '.docx') {
+    if (!buffer.slice(0, 4).equals(Buffer.from([0x50, 0x4b, 0x03, 0x04]))) {
+      return false;
+    }
+    const text = buffer.toString('utf8', 0, Math.min(buffer.length, 65536));
+    return text.includes('word/document.xml');
+  }
+
+  return false;
+}
+
+async function validateCourseDocumentContent(req, res, next) {
+  const uploadedFile = getUploadedFile(req);
+  if (!uploadedFile) {
+    return res.status(400).json({ success: false, message: 'Document file is required' });
+  }
+
+  const extension = path.extname(uploadedFile.originalname || '').toLowerCase();
+  if (!allowedExtensions.has(extension)) {
+    return res.status(400).json({ success: false, message: 'Định dạng file không hợp lệ' });
+  }
+
+  try {
+    const buffer = await fs.promises.readFile(uploadedFile.path);
+    if (!isValidDocumentSignature(buffer, extension)) {
+      await fs.promises.unlink(uploadedFile.path).catch(() => {});
+      return res.status(400).json({ success: false, message: 'Định dạng file không hợp lệ' });
+    }
+    return next();
+  } catch (error) {
+    console.error('Error validating document content:', error);
+    if (uploadedFile.path) {
+      await fs.promises.unlink(uploadedFile.path).catch(() => {});
+    }
+    return res.status(400).json({ success: false, message: 'Định dạng file không hợp lệ' });
+  }
+}
+
 module.exports = {
   uploadCourseDocument,
+  validateCourseDocumentContent,
 };
