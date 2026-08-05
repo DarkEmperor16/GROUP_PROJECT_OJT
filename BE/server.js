@@ -72,6 +72,14 @@ app.get('/api/admin/test', authenticateToken, authorizeRoles('ADMIN'), (req, res
   });
 });
 
+// Catch-all 404 for any unmatched API or app route
+app.use((req, res, next) => {
+  res.status(404).json({
+    success: false,
+    message: 'Endpoint không tồn tại',
+  });
+});
+
 // Centralized error handler — MUST be registered after routes
 app.use(errorHandler);
 
