@@ -26,6 +26,19 @@ const app = express();
 app.use(cors());
 
 app.use(express.json({ limit: '20kb' }));
+
+// Immediate JSON parse error handler (placed right after express.json())
+// This prevents raw parser errors from bubbling up as HTML/text responses.
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({ success: false, message: 'Dữ liệu đầu vào không hợp lệ' });
+  }
+  if (err && err.type === 'entity.parse.failed') {
+    return res.status(400).json({ success: false, message: 'Dữ liệu đầu vào không hợp lệ' });
+  }
+  return next(err);
+});
+
 app.use(cookieParser()); // Parse cookies (cần cho refresh token)
 app.use(xssProtection); // Reject requests containing XSS payloads before they reach any controller
 
@@ -72,12 +85,12 @@ app.get('/api/admin/test', authenticateToken, authorizeRoles('ADMIN'), (req, res
   });
 });
 
-// Catch-all 404 for any unmatched API or app route
+// API-only 404: return JSON for unmatched /api routes, let non-API routes fallthrough
 app.use((req, res, next) => {
-  res.status(404).json({
-    success: false,
-    message: 'Endpoint không tồn tại',
-  });
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ success: false, message: 'Endpoint không tồn tại' });
+  }
+  return next();
 });
 
 // Centralized error handler — MUST be registered after routes
