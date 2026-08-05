@@ -1,6 +1,9 @@
 const express = require('express');
 const { authenticateToken, authorizeRoles } = require('../middlewares/auth.middleware');
-const { uploadCourseDocument } = require('../middlewares/upload.middleware');
+const {
+  uploadCourseDocument,
+  validateCourseDocumentContent,
+} = require('../middlewares/upload.middleware');
 const {
   uploadDocument,
   listCourseDocuments,
@@ -23,6 +26,7 @@ router.post(
     { name: 'document', maxCount: 1 },
     { name: 'documentFile', maxCount: 1 },
   ]),
+  validateCourseDocumentContent,
   uploadDocument,
 );
 
