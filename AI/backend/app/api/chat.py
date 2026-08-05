@@ -126,6 +126,15 @@ async def chat_completions(request: ChatRequest):
         k=request.k,
     )
 
+    # Nếu không tìm thấy tài liệu nào cho subject này, trả thông báo rõ ràng
+    if not docs and subject:
+        def no_docs_generator():
+            yield _sse("no_documents", event="status")
+            yield _sse("[]", event="sources")
+            yield _sse("[]", event="suggestions")
+            yield _sse("Tài liệu không tồn tại. Vui lòng liên hệ giảng viên để cập nhật tài liệu.")
+
+        return StreamingResponse(no_docs_generator(), media_type="text/event-stream")
 
     max_context_length = 3000
     compressed_docs = []

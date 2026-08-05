@@ -70,6 +70,9 @@ async def root_ask(request: BEAskRequest):
         
     docs = vector_service.search(clean_message, subject=subject, k=4)
     
+    if not docs and subject:
+        return {"answer": "Tài liệu không tồn tại. Vui lòng liên hệ giảng viên để cập nhật tài liệu."}
+    
     max_context_length = 3000
     compressed_docs = []
     current_len = 0
