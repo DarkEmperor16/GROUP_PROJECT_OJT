@@ -3,6 +3,7 @@ const fs = require('fs');
 const mongoose = require('mongoose');
 const Course = require('../models/Course');
 const CourseDocument = require('../models/CourseDocument');
+const QaHistory = require('../models/QaHistory');
 const { buildIndexPayload, requestDocumentIndex, notifyDocumentStatusChange, requestDocumentDeletion } = require('../services/ai.service');
 
 const DOCUMENT_STATUSES = new Set(['uploaded', 'processing', 'active', 'failed', 'inactive']);
@@ -399,6 +400,14 @@ async function deleteDocument(req, res) {
   }
 
   await CourseDocument.deleteOne({ _id: document._id });
+
+  // Xóa toàn bộ lịch sử chat AI của course này vì tài liệu đã thay đổi
+  try {
+    const deletedChatResult = await QaHistory.deleteMany({ courseId: document.courseId });
+    console.log(`[deleteDocument] Deleted ${deletedChatResult.deletedCount} QaHistory records for course ${document.courseId}`);
+  } catch (chatDeleteError) {
+    console.error('[deleteDocument] Failed to delete QaHistory:', chatDeleteError);
+  }
 
   if (storagePath && fs.existsSync(storagePath)) {
     try {
