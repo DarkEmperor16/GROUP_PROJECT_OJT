@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const multer = require('multer');
 
 const uploadDir = path.resolve(process.cwd(), 'uploads', 'course-documents');
@@ -66,19 +67,12 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename(req, file, cb) {
-    // Chỉ lấy extension cuối cùng đã được whitelist để đặt tên file lưu trên disk
     const ext = path.extname(file.originalname).toLowerCase();
-    // Làm sạch tên file: xóa toàn bộ phần extension (kể cả double ext), chỉ giữ baseName
-    const rawBase = file.originalname.replace(/\.[^.]+$/, ''); // bỏ ext cuối
-    const safeBase = rawBase
-      .replace(/\.[^.]+$/, '') // bỏ thêm một lớp nữa để tránh "name.jpg.php" → "name.jpg"
-      .replace(/[^a-zA-Z0-9\-_]/g, '-') // ký tự đặc biệt → dấu gạch ngang
-      .replace(/-+/g, '-')
-      .toLowerCase()
-      .substring(0, 100); // giới hạn độ dài
-    const timestamp = Date.now();
+    const uniqueName = crypto.randomUUID();
 
-    cb(null, `${safeBase}-${timestamp}${ext}`);
+    // Lưu tên file vật lý bằng UUID + extension, không dựa vào originalname.
+    // originalname vẫn có thể được lưu riêng trong metadata/database để hiển thị cho người dùng.
+    cb(null, `${uniqueName}${ext}`);
   },
 });
 
